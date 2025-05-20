@@ -40,3 +40,279 @@
 .read-the-docs {
   color: #888;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #242333;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.movie-container {
+  margin: 20px 0;
+}
+
+.movie-container select {
+  background-color: #ffffff;
+  border: 0;
+  border-radius: 5px;
+  font-size: 14px;
+  margin-left: 10px;
+  padding: 5px 15px;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.container {
+  perspective: 1000px;
+  margin-bottom: 30px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 40px 20px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.seat {
+  background-color: #444451;
+  height: 25px;
+  width: 35px; /* Slightly wider to fit the label */
+  margin: 5px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+  position: relative;
+}
+
+.seat-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.65em;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  letter-spacing: -0.5px;
+}
+
+.seat.selected {
+  background-color: #6feaf6;
+}
+
+.seat.selected .seat-label {
+  color: #242333;
+}
+
+.seat.occupied {
+  background-color: #ffffff;
+  cursor: not-allowed;
+}
+
+.seat.occupied .seat-label {
+  color: #000000;
+}
+
+.seat.broken {
+  background-color: #ff4444;
+  cursor: not-allowed;
+}
+
+.seat.accessible {
+  background-color: #4CAF50;
+}
+
+.seat.accessible.selected {
+  background-color: #81C784;
+}
+
+.seat:not(.occupied):not(.broken):hover {
+  transform: scale(1.15);
+  background-color: #5cc7ce;
+}
+
+.seating-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.row-label {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #fff;
+  width: 30px;
+  text-align: center;
+}
+
+.screen {
+  background-color: #fff;
+  height: 100px;
+  width: 90%;
+  margin: 25px auto;
+  transform: rotateX(-45deg);
+  box-shadow: 0 3px 10px rgba(255, 255, 255, 0.7);
+}
+
+.section {
+  display: flex;
+  gap: 8px;
+}
+
+.showcase {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: #777;
+  list-style-type: none;
+  display: flex;
+  justify-content: space-between;
+}
+
+.showcase li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 10px;
+}
+
+.showcase li small {
+  margin-left: 10px;
+}
+
+.showcase .seat {
+  margin: 0 5px;
+}
+
+.loading {
+  color: white;
+  font-size: 1.5em;
+  text-align: center;
+  margin-top: 50px;
+}
+
+.book-button {
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.book-button:hover {
+  background-color: #45a049;
+}
+
+p.text {
+  margin: 5px 0;
+}
+
+p.text span {
+  color: #6feaf6;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-container input {
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+}
+
+.login-container button {
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  background: #4CAF50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-container button:hover {
+  background: #45a049;
+}
+
+.user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.user-info button {
+  padding: 8px 16px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+  
+  .seat {
+    height: 16px;
+    width: 24px;
+    margin: 3px;
+  }
+  
+  .seat-label {
+    font-size: 0.6em;
+  }
+  
+  .row {
+    gap: 15px;
+  }
+  
+  .screen {
+    height: 70px;
+  }
+}
