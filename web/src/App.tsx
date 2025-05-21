@@ -7,7 +7,6 @@ import { AuthProvider } from './context/AuthContext';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Movies from './pages/Movies';
-import Booking from './pages/Booking';
 import Payment from './pages/Payment';
 import Ticket from './pages/Ticket';
 import NotFound from './pages/NotFound';
@@ -117,7 +116,7 @@ function App() {
                       <SelectScreen />
                     </AnimatedPage>
                   } />
-                  <Route path="/booking/:movieId/:screeningId" element={
+                  <Route path="/booking/:movieId/:showtimesId" element={
                     <AnimatedPage>
                       <SelectSeats />
                     </AnimatedPage>

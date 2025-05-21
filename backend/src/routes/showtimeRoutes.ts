@@ -5,7 +5,6 @@ import {
   getShowtimeById,
   updateShowtime,
   deleteShowtime,
-  getAvailableTimeSlots
 } from '../controllers/showtimeController';
 import { authenticateJWT } from '../middleware/auth';
 
@@ -13,7 +12,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getShowtimes);
-router.get('/available-slots', getAvailableTimeSlots);
+router.get('/movie/:movieId', getShowtimes);
 router.get('/:id', getShowtimeById);
 
 // Protected routes (admin only)

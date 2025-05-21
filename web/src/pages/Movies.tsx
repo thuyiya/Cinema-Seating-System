@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Movies.css';
-import { useAuth } from '../context/AuthContext';
+import type { Movie } from '../types/movie';
 
-interface Movie {
-  id: number;
-  title: string;
-  posterPath: string;
-  releaseDate: string;
-  rating: number;
-  type: 'now_showing' | 'coming_soon';
-}
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -77,8 +69,8 @@ const Movies = () => {
             <div className="movie-row">
               {movies.nowShowing.map(movie => (
                 <div
-                  key={movie.id}
-                  onClick={() => navigate(`/booking/${movie.id}`)}
+                  key={movie._id}
+                  onClick={() => navigate(`/booking/${movie._id}`)}
                   className="movie-card"
                 >
                   <img 
@@ -105,7 +97,7 @@ const Movies = () => {
             <div className="movie-row">
               {movies.comingSoon.map(movie => (
                 <div
-                  key={movie.id}
+                  key={movie._id}
                   className="movie-card coming-soon"
                 >
                   <img 

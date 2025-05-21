@@ -16,16 +16,17 @@ export default function SelectSeats() {
   const [showtime, setShowtime] = useState<Showtime | null>(null);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { movieId, showtimeId } = useParams();
+  const { movieId, showtimesId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchShowtimeAndSeats = async () => {
       try {
+        setLoading(true);
         // Fetch showtime details
-        const showtimeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimeId}`);
+        const showtimeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}`);
         if (!showtimeResponse.ok) {
           throw new Error('Failed to fetch showtime details');
         }
@@ -33,24 +34,24 @@ export default function SelectSeats() {
         setShowtime(showtimeData);
 
         // Fetch seats for the showtime
-        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimeId}/seats`);
+        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtimeData.screenId._id}`);
         if (!seatsResponse.ok) {
           throw new Error('Failed to fetch seats');
         }
         const seatsData = await seatsResponse.json();
         setSeats(seatsData);
+        setLoading(false);
       } catch (error) {
         setError('Failed to load seating information. Please try again later.');
         console.error('Error:', error);
-      } finally {
         setLoading(false);
       }
     };
 
-    if (showtimeId) {
+    if (showtimesId) {
       fetchShowtimeAndSeats();
     }
-  }, [showtimeId]);
+  }, [showtimesId]);
 
   const handleSeatClick = (seatId: string, seatType: string) => {
     setSelectedSeats(prev => {
@@ -76,7 +77,7 @@ export default function SelectSeats() {
     navigate('/payment', {
       state: {
         movieId,
-        showtimeId,
+        showtimesId,
         movieTitle: showtime.movieId.title,
         screenName: `Screen ${showtime.screenId.number} - ${showtime.screenId.name}`,
         showtime: `${showtime.date} ${showtime.startTime}`,

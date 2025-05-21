@@ -21,27 +21,29 @@ export default function SelectScreen() {
   const { movieId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchShowtimes = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes?movieId=${movieId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch showtimes');
-        }
-        const data = await response.json();
-        setShowtimes(data);
-      } catch (error) {
-        setError('Failed to load showtimes. Please try again later.');
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
+  const fetchShowtimes = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes?movieId=${movieId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch showtimes');
       }
-    };
-
-    if (movieId) {
-      fetchShowtimes();
+      const data = await response.json();
+      setShowtimes(data);
+    } catch (error) {
+      setError('Failed to load showtimes. Please try again later.');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [movieId]);
+  };
+
+  useEffect(() => {
+    fetchShowtimes();
+  }, []);
+
+  const handleShowtimeSelect = (showtime: Showtime) => {
+    navigate(`/booking/${movieId}/${showtime._id}/${showtime.screenId._id}`);
+  };
 
   if (loading) {
     return (
@@ -95,7 +97,7 @@ export default function SelectScreen() {
                   <Button
                     variant="outlined"
                     fullWidth
-                    onClick={() => navigate(`/booking/${movieId}/${showtime._id}`)}
+                    onClick={() => handleShowtimeSelect(showtime)}
                     sx={{ textAlign: 'left', display: 'block' }}
                   >
                     <Typography variant="subtitle1">

@@ -53,7 +53,8 @@ export const createShowtime = async (req: Request, res: Response) => {
 
 export const getShowtimes = async (req: Request, res: Response) => {
   try {
-    const { date, movieId, screenId } = req.query;
+    const { date, screenId } = req.query;
+    const movieId = req.params.movieId || req.query.movieId;
     const query: any = {};
 
     if (date) {
@@ -68,17 +69,29 @@ export const getShowtimes = async (req: Request, res: Response) => {
     }
 
     if (movieId) {
-      query.movieId = new mongoose.Types.ObjectId(movieId as string);
+      try {
+        query.movieId = new mongoose.Types.ObjectId(movieId as string);
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid movieId format' });
+      }
     }
 
     if (screenId) {
-      query.screenId = new mongoose.Types.ObjectId(screenId as string);
+      try {
+        query.screenId = new mongoose.Types.ObjectId(screenId as string);
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid screenId format' });
+      }
     }
 
     const showtimes = await Showtime.find(query)
-      .populate('movieId', 'title duration')
+      .populate('movieId', 'title duration poster rating')
       .populate('screenId', 'name number')
       .sort({ date: 1, startTime: 1 });
+
+    if (movieId && showtimes.length === 0) {
+      return res.status(404).json({ message: 'No showtimes found for this movie' });
+    }
 
     res.json(showtimes);
   } catch (error) {
@@ -154,57 +167,3 @@ export const deleteShowtime = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error deleting showtime' });
   }
 };
-
-export const getAvailableTimeSlots = async (req: Request, res: Response) => {
-  try {
-    const { screenId, date } = req.query;
-    
-    if (!screenId || !date) {
-      return res.status(400).json({ message: 'Screen ID and date are required' });
-    }
-
-    const searchDate = new Date(date as string);
-    searchDate.setHours(0, 0, 0, 0);
-    const nextDay = new Date(searchDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    // Get all showtimes for the screen on the given date
-    const showtimes = await Showtime.find({
-      screenId: new mongoose.Types.ObjectId(screenId as string),
-      date: {
-        $gte: searchDate,
-        $lt: nextDay
-      }
-    }).sort({ startTime: 1 });
-
-    // Define business hours (e.g., 10:00 to 23:00)
-    const businessHours = {
-      start: '10:00',
-      end: '23:00'
-    };
-
-    // Generate all possible time slots (e.g., every 15 minutes)
-    const timeSlots = [];
-    let currentTime = businessHours.start;
-    while (currentTime <= businessHours.end) {
-      const isAvailable = !showtimes.some(showtime => {
-        return currentTime >= showtime.startTime && currentTime < showtime.endTime;
-      });
-
-      if (isAvailable) {
-        timeSlots.push(currentTime);
-      }
-
-      // Add 15 minutes
-      const [hours, minutes] = currentTime.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes + 15);
-      currentTime = date.toTimeString().slice(0, 5);
-    }
-
-    res.json(timeSlots);
-  } catch (error) {
-    console.error('Error getting available time slots:', error);
-    res.status(500).json({ message: 'Error getting available time slots' });
-  }
-}; 
