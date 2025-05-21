@@ -14,58 +14,112 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   IconButton,
   Box,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
+  Alert,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EventSeatIcon from '@mui/icons-material/EventSeat';
+import ScreenForm from '../../components/ScreenForm';
+import type { IScreenFormData } from '../../components/ScreenForm';
 
 interface Screen {
-  id: string;
+  _id: string;
   number: number;
-  hallId: string;
-  hall: {
+  name: string;
+  sections: {
     name: string;
-  };
-  rows: number;
-  seatsPerRow: number;
+    rows: number;
+    seatsPerRow: number;
+    startRow: number;
+    rowLabels: string[];
+    seatLabels: string[];
+    seats: {
+      row: number;
+      number: number;
+      type: 'standard' | 'vip' | 'accessible';
+      status: 'available' | 'broken' | 'maintenance';
+      position: 'aisle' | 'middle' | 'edge';
+      preferredView: boolean;
+    }[];
+  }[];
   totalCapacity: number;
+  layout: {
+    type: 'straight' | 'curved' | 'c-shaped';
+    hasBalcony: boolean;
+    aislePositions: number[];
+  };
+  seatingRules: {
+    allowSplitGroups: boolean;
+    maxGroupSize: number;
+    allowSinglesBetweenGroups: boolean;
+    preferredStartingRows: number[];
+    vipRowsRange: {
+      start: number;
+      end: number;
+    };
+    accessibleSeatsLocations: {
+      row: number;
+      seatStart: number;
+      seatEnd: number;
+    }[];
+  };
 }
 
-interface Hall {
-  id: string;
-  name: string;
-}
+const defaultFormData: IScreenFormData = {
+  number: '',
+  name: '',
+  sections: [{
+    name: 'Main',
+    rows: '10',
+    seatsPerRow: '15',
+    startRow: 1,
+    rowLabels: Array.from({ length: 10 }, (_, i) => String.fromCharCode(65 + i)),
+    seatLabels: Array.from({ length: 15 }, (_, i) => (i + 1).toString()),
+    seats: []
+  }],
+  layout: {
+    type: 'straight' as const,
+    hasBalcony: false,
+    aislePositions: [5, 10]
+  },
+  seatingRules: {
+    allowSplitGroups: false,
+    maxGroupSize: 7,
+    allowSinglesBetweenGroups: false,
+    preferredStartingRows: [3, 4, 5],
+    vipRowsRange: {
+      start: 1,
+      end: 2
+    },
+    accessibleSeatsLocations: [{
+      row: 1,
+      seatStart: 1,
+      seatEnd: 4
+    }]
+  }
+};
 
 export default function ManageScreens() {
   const [screens, setScreens] = useState<Screen[]>([]);
-  const [halls, setHalls] = useState<Hall[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingScreen, setEditingScreen] = useState<Screen | null>(null);
-  const [formData, setFormData] = useState({
-    number: '',
-    hallId: '',
-    rows: '',
-    seatsPerRow: '',
-  });
+  const [formData, setFormData] = useState<IScreenFormData>(defaultFormData);
 
   useEffect(() => {
-    Promise.all([fetchScreens(), fetchHalls()]).finally(() => setLoading(false));
+    fetchScreens();
   }, []);
 
   const fetchScreens = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/screens');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/screens`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch screens');
       }
@@ -74,19 +128,8 @@ export default function ManageScreens() {
     } catch (error) {
       setError('Failed to load screens. Please try again later.');
       console.error('Error:', error);
-    }
-  };
-
-  const fetchHalls = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/halls');
-      if (!response.ok) {
-        throw new Error('Failed to fetch halls');
-      }
-      const data = await response.json();
-      setHalls(data);
-    } catch (error) {
-      console.error('Error fetching halls:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,18 +138,22 @@ export default function ManageScreens() {
       setEditingScreen(screen);
       setFormData({
         number: screen.number.toString(),
-        hallId: screen.hallId,
-        rows: screen.rows.toString(),
-        seatsPerRow: screen.seatsPerRow.toString(),
+        name: screen.name,
+        sections: screen.sections.map(section => ({
+          name: section.name,
+          rows: section.rows.toString(),
+          seatsPerRow: section.seatsPerRow.toString(),
+          startRow: section.startRow,
+          rowLabels: section.rowLabels,
+          seatLabels: section.seatLabels,
+          seats: section.seats
+        })),
+        layout: screen.layout,
+        seatingRules: screen.seatingRules
       });
     } else {
       setEditingScreen(null);
-      setFormData({
-        number: '',
-        hallId: '',
-        rows: '',
-        seatsPerRow: '',
-      });
+      setFormData(defaultFormData);
     }
     setOpenDialog(true);
   };
@@ -114,42 +161,53 @@ export default function ManageScreens() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingScreen(null);
-    setFormData({
-      number: '',
-      hallId: '',
-      rows: '',
-      seatsPerRow: '',
-    });
+    setFormData(defaultFormData);
   };
 
   const handleSubmit = async () => {
     try {
+      // Calculate total capacity from all sections
+      const totalCapacity = formData.sections.reduce((total, section) => {
+        return total + (parseInt(section.rows) * parseInt(section.seatsPerRow));
+      }, 0);
+
+      const screenData = {
+        number: parseInt(formData.number),
+        name: formData.name,
+        sections: formData.sections.map(section => ({
+          ...section,
+          rows: parseInt(section.rows),
+          seatsPerRow: parseInt(section.seatsPerRow)
+        })),
+        layout: formData.layout,
+        seatingRules: formData.seatingRules,
+        totalCapacity
+      };
+
       const url = editingScreen
-        ? `http://localhost:3001/api/screens/${editingScreen.id}`
-        : 'http://localhost:3001/api/screens';
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/screens/${editingScreen._id}`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/screens`;
       
       const response = await fetch(url, {
         method: editingScreen ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          number: parseInt(formData.number),
-          hallId: formData.hallId,
-          rows: parseInt(formData.rows),
-          seatsPerRow: parseInt(formData.seatsPerRow),
-        }),
+        body: JSON.stringify(screenData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save screen');
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to save screen');
       }
 
       handleCloseDialog();
       fetchScreens();
+      setError(null);
     } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to save screen');
       console.error('Error saving screen:', error);
-      // You might want to show an error message to the user here
     }
   };
 
@@ -159,8 +217,11 @@ export default function ManageScreens() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/screens/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/screens/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
 
       if (!response.ok) {
@@ -168,9 +229,10 @@ export default function ManageScreens() {
       }
 
       fetchScreens();
+      setError(null);
     } catch (error) {
+      setError('Failed to delete screen. Please try again.');
       console.error('Error deleting screen:', error);
-      // You might want to show an error message to the user here
     }
   };
 
@@ -197,106 +259,66 @@ export default function ManageScreens() {
         </Button>
       </Box>
 
-      {error ? (
-        <Typography color="error">{error}</Typography>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Screen Number</TableCell>
-                <TableCell>Hall</TableCell>
-                <TableCell align="right">Rows</TableCell>
-                <TableCell align="right">Seats per Row</TableCell>
-                <TableCell align="right">Total Capacity</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {screens.map((screen) => (
-                <TableRow key={screen.id}>
-                  <TableCell>{screen.number}</TableCell>
-                  <TableCell>{screen.hall.name}</TableCell>
-                  <TableCell align="right">{screen.rows}</TableCell>
-                  <TableCell align="right">{screen.seatsPerRow}</TableCell>
-                  <TableCell align="right">{screen.totalCapacity}</TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpenDialog(screen)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDelete(screen.id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Screen Number</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Layout Type</TableCell>
+              <TableCell>Sections</TableCell>
+              <TableCell align="right">Total Capacity</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {screens.map((screen) => (
+              <TableRow key={screen._id}>
+                <TableCell>{screen.number}</TableCell>
+                <TableCell>{screen.name}</TableCell>
+                <TableCell>{screen.layout.type}</TableCell>
+                <TableCell>{screen.sections.length}</TableCell>
+                <TableCell align="right">{screen.totalCapacity}</TableCell>
+                <TableCell align="right">
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleOpenDialog(screen)}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(screen._id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingScreen ? 'Edit Screen' : 'Add New Screen'}
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={6}>
-              <TextField
-                autoFocus
-                label="Screen Number"
-                type="number"
-                fullWidth
-                value={formData.number}
-                onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <FormControl fullWidth>
-                <InputLabel>Hall</InputLabel>
-                <Select
-                  value={formData.hallId}
-                  label="Hall"
-                  onChange={(e) => setFormData({ ...formData, hallId: e.target.value })}
-                >
-                  {halls.map((hall) => (
-                    <MenuItem key={hall.id} value={hall.id}>
-                      {hall.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Number of Rows"
-                type="number"
-                fullWidth
-                value={formData.rows}
-                onChange={(e) => setFormData({ ...formData, rows: e.target.value })}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Seats per Row"
-                type="number"
-                fullWidth
-                value={formData.seatsPerRow}
-                onChange={(e) => setFormData({ ...formData, seatsPerRow: e.target.value })}
-              />
-            </Grid>
-          </Grid>
+          <ScreenForm
+            formData={formData}
+            onChange={setFormData}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained" color="primary">
-            {editingScreen ? 'Save Changes' : 'Add Screen'}
+            {editingScreen ? 'Save Changes' : 'Create Screen'}
           </Button>
         </DialogActions>
       </Dialog>

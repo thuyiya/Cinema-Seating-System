@@ -92,7 +92,7 @@ function App() {
                   <Route path="/" element={<Movies />} />
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/register" element={<Register />} />
-                  <Route path="/admin/login" element={<Login isAdmin={true} />} />
+                  <Route path="/admin/login" element={<Login />} />
 
                   {/* Protected Routes */}
                   <Route path="/booking" element={

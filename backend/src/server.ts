@@ -1,14 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config(); // this should be the second line of the file
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
 import passport from 'passport';
 import tmdbRoutes from './routes/tmdbRoutes';
 import authRoutes from './routes/authRoutes';
 import movieRoutes from './routes/movieRoutes';
-
-dotenv.config();
+import screenRoutes from './routes/screenRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,6 +47,7 @@ const startServer = async () => {
     apiRouter.use('/auth', authRoutes);
     apiRouter.use('/tmdb', tmdbRoutes);
     apiRouter.use('/movies', movieRoutes);
+    apiRouter.use('/screens', screenRoutes);
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
