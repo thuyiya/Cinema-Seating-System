@@ -12,7 +12,7 @@ import {
 export interface ISeat {
   row: number;
   number: number;
-  type: 'standard' | 'vip' | 'accessible';
+  type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
   status: 'available' | 'broken' | 'maintenance';
   position: 'aisle' | 'middle' | 'edge';
   preferredView: boolean;

@@ -40,19 +40,24 @@ export interface Showtime {
     _id: string;
     number: number;
     name: string;
+    layout: {
+      type: 'straight' | 'curved' | 'c-shaped';
+      hasBalcony: boolean;
+      aislePositions: number[];
+    };
   };
   date: string;
   startTime: string;
   endTime: string;
   price: {
-    standard: number;
-    vip: number;
-    accessible: number;
+    REGULAR: number;
+    VIP: number;
+    ACCESSIBLE: number;
   };
   availableSeats: {
-    standard: number;
-    vip: number;
-    accessible: number;
+    REGULAR: number;
+    VIP: number;
+    ACCESSIBLE: number;
   };
   isActive: boolean;
 }
@@ -61,6 +66,9 @@ export interface Seat {
   id: string;
   row: string;
   number: number;
-  type: 'standard' | 'vip' | 'accessible';
+  type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
   isBooked: boolean;
+  status?: 'available' | 'booked' | 'broken' | 'maintenance';
+  position: 'aisle' | 'middle' | 'edge';
+  preferredView: boolean;
 } 

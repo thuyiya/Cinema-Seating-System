@@ -7,16 +7,20 @@ export interface IShowtime extends Document {
   startTime: string; // 24-hour format HH:mm
   endTime: string; // 24-hour format HH:mm
   price: {
-    standard: number;
-    vip: number;
-    accessible: number;
+    REGULAR: number;
+    VIP: number;
+    ACCESSIBLE: number;
   };
   isActive: boolean;
   availableSeats: {
-    standard: number;
-    vip: number;
-    accessible: number;
+    REGULAR: number;
+    VIP: number;
+    ACCESSIBLE: number;
   };
+  bookedSeats: Array<{
+    seatId: mongoose.Types.ObjectId;
+    bookingId: mongoose.Types.ObjectId;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,17 +61,17 @@ const showtimeSchema = new Schema<IShowtime>({
     }
   },
   price: {
-    standard: {
+    REGULAR: {
       type: Number,
       required: true,
       min: 0
     },
-    vip: {
+    VIP: {
       type: Number,
       required: true,
       min: 0
     },
-    accessible: {
+    ACCESSIBLE: {
       type: Number,
       required: true,
       min: 0
@@ -78,22 +82,33 @@ const showtimeSchema = new Schema<IShowtime>({
     default: true
   },
   availableSeats: {
-    standard: {
+    REGULAR: {
       type: Number,
       required: true,
       min: 0
     },
-    vip: {
+    VIP: {
       type: Number,
       required: true,
       min: 0
     },
-    accessible: {
+    ACCESSIBLE: {
       type: Number,
       required: true,
       min: 0
     }
-  }
+  },
+  bookedSeats: [{
+    seatId: {
+      type: Schema.Types.ObjectId,
+      required: true
+    },
+    bookingId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'Booking'
+    }
+  }]
 }, {
   timestamps: true
 });
@@ -132,13 +147,13 @@ showtimeSchema.pre('save', async function(next) {
 });
 
 // Helper method to check seat availability
-showtimeSchema.methods.hasAvailableSeats = function(seatType: 'standard' | 'vip' | 'accessible', quantity: number) {
+showtimeSchema.methods.hasAvailableSeats = function(seatType: 'REGULAR' | 'VIP' | 'ACCESSIBLE', quantity: number) {
   return this.availableSeats[seatType] >= quantity;
 };
 
 // Helper method to update available seats
 showtimeSchema.methods.updateAvailableSeats = function(
-  seatType: 'standard' | 'vip' | 'accessible',
+  seatType: 'REGULAR' | 'VIP' | 'ACCESSIBLE',
   quantity: number,
   operation: 'reserve' | 'release'
 ) {

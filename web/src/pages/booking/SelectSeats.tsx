@@ -11,10 +11,16 @@ import {
   Divider,
 } from '@mui/material';
 import type { Showtime, Seat } from '../../types/movie';
+import SeatLayout from '../../components/SeatLayout';
+
+interface Section {
+  name: string;
+  seats: Seat[];
+}
 
 export default function SelectSeats() {
   const [showtime, setShowtime] = useState<Showtime | null>(null);
-  const [seats, setSeats] = useState<Seat[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,12 +40,29 @@ export default function SelectSeats() {
         setShowtime(showtimeData);
 
         // Fetch seats for the showtime
-        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtimeData.screenId._id}`);
+        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtimeData.screenId._id}/seats`);
         if (!seatsResponse.ok) {
           throw new Error('Failed to fetch seats');
         }
         const seatsData = await seatsResponse.json();
-        setSeats(seatsData);
+        
+        // Transform seats data to match the required format
+        const transformedSections = seatsData.map((section: any) => ({
+          name: section.name,
+          seats: section.seats.map((seat: any) => ({
+            id: `${seat.row}-${seat.number}`,
+            row: seat.row.toString(),
+            number: seat.number,
+            type: seat.type || 'REGULAR', // Default to REGULAR if not specified
+            isBooked: seat.status === 'booked',
+            position: seat.position || 'middle', // Default to middle if not specified
+            preferredView: seat.preferredView || false,
+            status: seat.status || 'available'
+          }))
+        }));
+        
+        setSections(transformedSections);
+        setShowtime(showtimeData);
         setLoading(false);
       } catch (error) {
         setError('Failed to load seating information. Please try again later.');
@@ -53,7 +76,7 @@ export default function SelectSeats() {
     }
   }, [showtimesId]);
 
-  const handleSeatClick = (seatId: string, seatType: string) => {
+  const handleSeatClick = (seatId: string, seat: Seat) => {
     setSelectedSeats(prev => {
       if (prev.includes(seatId)) {
         return prev.filter(id => id !== seatId);
@@ -65,9 +88,10 @@ export default function SelectSeats() {
   const calculateTotalPrice = () => {
     if (!showtime) return 0;
     return selectedSeats.reduce((total, seatId) => {
-      const seat = seats.find(s => s.id === seatId);
+      const seat = sections.flatMap(s => s.seats).find(s => s.id === seatId);
       if (!seat) return total;
-      return total + showtime.price[seat.type];
+      const seatType = seat.type.toUpperCase() as keyof typeof showtime.price;
+      return total + showtime.price[seatType];
     }, 0);
   };
 
@@ -105,15 +129,6 @@ export default function SelectSeats() {
     );
   }
 
-  // Group seats by row
-  const seatsByRow = seats.reduce((acc, seat) => {
-    if (!acc[seat.row]) {
-      acc[seat.row] = [];
-    }
-    acc[seat.row].push(seat);
-    return acc;
-  }, {} as { [key: string]: Seat[] });
-
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -137,55 +152,38 @@ export default function SelectSeats() {
         </Typography>
         <Divider sx={{ mb: 4 }} />
 
-        <Box sx={{ mb: 4 }}>
-          {Object.entries(seatsByRow).map(([row, seats]) => (
-            <Grid container spacing={1} key={row} justifyContent="center" sx={{ mb: 1 }}>
-              <Grid item xs={1}>
-                <Typography align="center">{row}</Typography>
-              </Grid>
-              <Grid item xs={11}>
-                <Grid container spacing={1} justifyContent="flex-start">
-                  {seats.map((seat) => (
-                    <Grid item key={seat.id}>
-                      <Button
-                        variant={selectedSeats.includes(seat.id) ? "contained" : "outlined"}
-                        disabled={seat.isBooked}
-                        onClick={() => handleSeatClick(seat.id, seat.type)}
-                        sx={{
-                          minWidth: '40px',
-                          height: '40px',
-                          p: 0,
-                          backgroundColor: seat.isBooked ? 'grey.300' : 
-                            seat.type === 'vip' ? 'secondary.light' :
-                            seat.type === 'accessible' ? 'info.light' : undefined
-                        }}
-                      >
-                        {seat.number}
-                      </Button>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Grid>
-            </Grid>
-          ))}
+        <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <SeatLayout
+            sections={sections}
+            selectedSeats={selectedSeats}
+            onSeatClick={handleSeatClick}
+            layout={{
+              type: showtime?.screenId?.layout?.type || 'straight',
+              hasBalcony: showtime?.screenId?.layout?.hasBalcony || false,
+              aislePositions: showtime?.screenId?.layout?.aislePositions || [5, 10]
+            }}
+            isAdminView={false}
+          />
         </Box>
 
         <Box sx={{ mt: 4 }}>
           <Typography variant="subtitle1" gutterBottom>
-            Seat Types:
+            Price List:
           </Typography>
           <Grid container spacing={2}>
             <Grid item>
-              <Button variant="outlined" disabled>Standard (${showtime.price.standard})</Button>
+              <Button variant="outlined" disabled>
+                Regular (${showtime?.price?.REGULAR || 0})
+              </Button>
             </Grid>
             <Grid item>
               <Button variant="outlined" disabled sx={{ backgroundColor: 'secondary.light' }}>
-                VIP (${showtime.price.vip})
+                VIP (${showtime?.price?.VIP || 0})
               </Button>
             </Grid>
             <Grid item>
               <Button variant="outlined" disabled sx={{ backgroundColor: 'info.light' }}>
-                Accessible (${showtime.price.accessible})
+                Accessible (${showtime?.price?.ACCESSIBLE || 0})
               </Button>
             </Grid>
           </Grid>

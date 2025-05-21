@@ -42,7 +42,7 @@ export default function SelectScreen() {
   }, []);
 
   const handleShowtimeSelect = (showtime: Showtime) => {
-    navigate(`/booking/${movieId}/${showtime._id}/${showtime.screenId._id}`);
+    navigate(`/booking/${movieId}/${showtime._id}`);
   };
 
   if (loading) {
@@ -107,7 +107,7 @@ export default function SelectScreen() {
                       Screen {showtime.screenId.number} - {showtime.screenId.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Standard: ${showtime.price.standard} | VIP: ${showtime.price.vip}
+                      Standard: ${showtime.price.REGULAR} | VIP: ${showtime.price.VIP}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Available seats: {

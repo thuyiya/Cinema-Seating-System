@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ISeat {
   row: number;
   number: number;
-  type: 'standard' | 'vip' | 'accessible';
+  type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
   status: 'available' | 'broken' | 'maintenance';
   position: 'aisle' | 'middle' | 'edge';
   preferredView: boolean;
@@ -53,8 +53,8 @@ const seatSchema = new Schema<ISeat>({
   number: { type: Number, required: true },
   type: {
     type: String,
-    enum: ['standard', 'vip', 'accessible'],
-    default: 'standard'
+    enum: ['REGULAR', 'VIP', 'ACCESSIBLE'],
+    default: 'REGULAR'
   },
   status: {
     type: String,
@@ -165,7 +165,7 @@ function generateSeats(section: ISection): ISeat[] {
       seats.push({
         row: section.startRow + row,
         number: seatNum + 1,
-        type: 'standard',
+        type: 'REGULAR',
         status: 'available',
         position: seatNum === 0 ? 'edge' : 
                  seatNum === section.seatsPerRow - 1 ? 'edge' : 'middle',

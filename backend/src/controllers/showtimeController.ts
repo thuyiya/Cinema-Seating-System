@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
 import { Showtime, IShowtime } from '../models/Showtime';
-import { Screen } from '../models/Screen';
+import { Screen, ISeat } from '../models/Screen';
 import mongoose from 'mongoose';
+
+interface ISeatWithId extends ISeat {
+  _id: mongoose.Types.ObjectId;
+}
 
 export const createShowtime = async (req: Request, res: Response) => {
   try {
@@ -15,17 +19,17 @@ export const createShowtime = async (req: Request, res: Response) => {
 
     // Calculate available seats based on screen configuration
     const availableSeats = {
-      standard: screen.sections.reduce((total, section) => 
+      REGULAR: screen.sections.reduce((total, section) => 
         total + section.seats.filter(seat => 
-          seat.type === 'standard' && seat.status === 'available'
+          seat.type === 'REGULAR' && seat.status === 'available'
         ).length, 0),
-      vip: screen.sections.reduce((total, section) => 
+      VIP: screen.sections.reduce((total, section) => 
         total + section.seats.filter(seat => 
-          seat.type === 'vip' && seat.status === 'available'
+          seat.type === 'VIP' && seat.status === 'available'
         ).length, 0),
-      accessible: screen.sections.reduce((total, section) => 
+      ACCESSIBLE: screen.sections.reduce((total, section) => 
         total + section.seats.filter(seat => 
-          seat.type === 'accessible' && seat.status === 'available'
+          seat.type === 'ACCESSIBLE' && seat.status === 'available'
         ).length, 0)
     };
 
@@ -165,5 +169,54 @@ export const deleteShowtime = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting showtime:', error);
     res.status(500).json({ message: 'Error deleting showtime' });
+  }
+};
+
+export const getShowtimeSeats = async (req: Request, res: Response) => {
+  try {
+    const { showtimeId, screenId } = req.params;
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(showtimeId) || !mongoose.Types.ObjectId.isValid(screenId)) {
+      return res.status(400).json({ message: 'Invalid showtime or screen ID' });
+    }
+
+    // Get the screen details
+    const screen = await Screen.findById(screenId);
+    if (!screen) {
+      return res.status(404).json({ message: 'Screen not found' });
+    }
+
+    // Get the showtime details with booked seats
+    const showtime = await Showtime.findById(showtimeId)
+      .populate('bookedSeats', 'seatId');
+
+    if (!showtime) {
+      return res.status(404).json({ message: 'Showtime not found' });
+    }
+
+    // Transform the screen sections into a seating map
+    const seatingMap = screen.sections.map(section => {
+      const seats = section.seats.map(seat => ({
+        id: (seat as ISeatWithId)._id.toString(),
+        row: section.rowLabels[seat.row - section.startRow] || seat.row.toString(),
+        number: seat.number,
+        type: seat.type.toUpperCase(),
+        isBooked: seat.status !== 'available' || 
+                 (showtime.bookedSeats && showtime.bookedSeats.some(bs => bs.seatId.toString() === (seat as ISeatWithId)._id.toString())),
+        position: seat.position,
+        preferredView: seat.preferredView
+      }));
+
+      return {
+        name: section.name,
+        seats: seats
+      };
+    });
+
+    res.json(seatingMap);
+  } catch (error) {
+    console.error('Error fetching showtime seats:', error);
+    res.status(500).json({ message: 'Error fetching seats' });
   }
 };

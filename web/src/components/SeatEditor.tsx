@@ -12,22 +12,24 @@ import {
   FormControlLabel,
   Switch,
   Box,
+  Typography,
 } from '@mui/material';
+import type { Seat } from '../types/movie';
 
-interface Seat {
-  row: number;
-  number: number;
-  type: 'standard' | 'vip' | 'accessible';
+// Create a type specifically for editing seats
+type EditableSeat = Omit<Seat, 'status'> & {
   status: 'available' | 'broken' | 'maintenance';
-  position: 'aisle' | 'middle' | 'edge';
-  preferredView: boolean;
-}
+};
 
 interface SeatEditorProps {
   open: boolean;
   seat: Seat | null;
   onClose: () => void;
-  onSave: (updatedSeat: Seat) => void;
+  onSave: (updatedSeat: {
+    type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
+    status: 'available' | 'broken' | 'maintenance';
+    preferredView: boolean;
+  }) => void;
 }
 
 const SeatEditor: React.FC<SeatEditorProps> = ({
@@ -36,15 +38,22 @@ const SeatEditor: React.FC<SeatEditorProps> = ({
   onClose,
   onSave,
 }) => {
-  const [editedSeat, setEditedSeat] = React.useState<Seat | null>(null);
+  const [editedSeat, setEditedSeat] = React.useState<EditableSeat | null>(null);
 
   React.useEffect(() => {
-    setEditedSeat(seat);
+    if (seat) {
+      // Convert the incoming seat to an editable seat
+      const editableSeat: EditableSeat = {
+        ...seat,
+        status: (seat.status === 'booked' || !seat.status) ? 'available' : seat.status
+      };
+      setEditedSeat(editableSeat);
+    }
   }, [seat]);
 
   if (!editedSeat) return null;
 
-  const handleChange = (field: keyof Seat, value: any) => {
+  const handleChange = (field: keyof typeof editedSeat, value: any) => {
     setEditedSeat(prev => {
       if (!prev) return prev;
       return { ...prev, [field]: value };
@@ -53,18 +62,28 @@ const SeatEditor: React.FC<SeatEditorProps> = ({
 
   const handleSave = () => {
     if (editedSeat) {
-      onSave(editedSeat);
+      onSave({
+        type: editedSeat.type,
+        status: editedSeat.status,
+        preferredView: editedSeat.preferredView
+      });
     }
     onClose();
   };
 
+  const rowLetter = String.fromCharCode(64 + parseInt(editedSeat.row));
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>
-        Edit Seat - Row {editedSeat.row}, Seat {editedSeat.number}
+        Edit Seat {rowLetter}{editedSeat.number}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 300, mt: 2 }}>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+            You can modify the seat type and status. Seat position and number cannot be changed after initial layout creation.
+          </Typography>
+
           <FormControl fullWidth>
             <InputLabel>Type</InputLabel>
             <Select
@@ -72,9 +91,9 @@ const SeatEditor: React.FC<SeatEditorProps> = ({
               label="Type"
               onChange={(e) => handleChange('type', e.target.value)}
             >
-              <MenuItem value="standard">Standard</MenuItem>
-              <MenuItem value="vip">VIP</MenuItem>
-              <MenuItem value="accessible">Accessible</MenuItem>
+              <MenuItem value="REGULAR">Regular</MenuItem>
+              <MenuItem value="VIP">VIP</MenuItem>
+              <MenuItem value="ACCESSIBLE">Accessible</MenuItem>
             </Select>
           </FormControl>
 
@@ -91,19 +110,6 @@ const SeatEditor: React.FC<SeatEditorProps> = ({
             </Select>
           </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>Position</InputLabel>
-            <Select
-              value={editedSeat.position}
-              label="Position"
-              onChange={(e) => handleChange('position', e.target.value)}
-            >
-              <MenuItem value="aisle">Aisle</MenuItem>
-              <MenuItem value="middle">Middle</MenuItem>
-              <MenuItem value="edge">Edge</MenuItem>
-            </Select>
-          </FormControl>
-
           <FormControlLabel
             control={
               <Switch
@@ -113,6 +119,12 @@ const SeatEditor: React.FC<SeatEditorProps> = ({
             }
             label="Preferred View"
           />
+
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              Position: {editedSeat.position.charAt(0).toUpperCase() + editedSeat.position.slice(1)}
+            </Typography>
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions>

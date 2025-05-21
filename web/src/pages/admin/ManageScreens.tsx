@@ -24,9 +24,10 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ScreenForm from '../../components/ScreenForm';
-import SeatVisualizer from '../../components/SeatVisualizer';
+import SeatLayout from '../../components/SeatLayout';
 import SeatEditor from '../../components/SeatEditor';
 import type { IScreenFormData } from '../../components/ScreenForm';
+import type { Seat } from '../../types/movie';
 
 interface Screen {
   _id: string;
@@ -42,7 +43,7 @@ interface Screen {
     seats: {
       row: number;
       number: number;
-      type: 'standard' | 'vip' | 'accessible';
+      type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
       status: 'available' | 'broken' | 'maintenance';
       position: 'aisle' | 'middle' | 'edge';
       preferredView: boolean;
@@ -201,12 +202,34 @@ export default function ManageScreens() {
     setSelectedTab(newValue);
   };
 
-  const handleSeatClick = (sectionIndex: number, seat: any) => {
-    setSelectedSeat({ section: sectionIndex, seat });
-    setOpenSeatEditor(true);
+  const handleSeatClick = (seatId: string, seat: Seat) => {
+    if (!editingScreen) return;
+
+    // Find the section index for the clicked seat
+    const sectionIndex = editingScreen.sections.findIndex(section =>
+      section.seats.some(s => `${s.row}-${s.number}` === seatId)
+    );
+
+    if (sectionIndex !== -1) {
+      const clickedSeat = editingScreen.sections[sectionIndex].seats.find(s => 
+        `${s.row}-${s.number}` === seatId
+      );
+      
+      if (clickedSeat) {
+        setSelectedSeat({
+          section: sectionIndex,
+          seat: clickedSeat
+        });
+        setOpenSeatEditor(true);
+      }
+    }
   };
 
-  const handleSeatUpdate = (updatedSeat: any) => {
+  const handleSeatUpdate = async (updatedSeat: {
+    type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
+    status: 'available' | 'broken' | 'maintenance';
+    preferredView: boolean;
+  }) => {
     if (!editingScreen || selectedSeat === null) return;
 
     const updatedScreen = { ...editingScreen };
@@ -215,31 +238,71 @@ export default function ManageScreens() {
       s => s.row === selectedSeat.seat.row && s.number === selectedSeat.seat.number
     );
 
-    if (seatIndex !== -1) {
-      updatedScreen.sections[sectionIndex].seats[seatIndex] = updatedSeat;
-    } else {
-      updatedScreen.sections[sectionIndex].seats.push(updatedSeat);
+    if (seatIndex === -1) {
+      setError('Cannot find the selected seat to update.');
+      return;
     }
 
-    // Convert the screen data to form data format
-    const updatedFormData: IScreenFormData = {
-      number: updatedScreen.number.toString(),
-      name: updatedScreen.name,
-      sections: updatedScreen.sections.map(section => ({
-        name: section.name,
-        rows: section.rows.toString(),
-        seatsPerRow: section.seatsPerRow.toString(),
-        startRow: section.startRow,
-        rowLabels: section.rowLabels,
-        seatLabels: section.seatLabels,
-        seats: section.seats
-      })),
-      layout: updatedScreen.layout,
-      seatingRules: updatedScreen.seatingRules
+    // Update only the allowed properties while preserving the seat's position and ID
+    const existingSeat = updatedScreen.sections[sectionIndex].seats[seatIndex];
+    updatedScreen.sections[sectionIndex].seats[seatIndex] = {
+      ...existingSeat,
+      type: updatedSeat.type,
+      status: updatedSeat.status,
+      preferredView: updatedSeat.preferredView
     };
 
-    // Update the screen on the server
-    handleSubmit(updatedFormData);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/screens/${editingScreen._id}/seats`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          sectionIndex,
+          seatIndex,
+          updates: {
+            type: updatedSeat.type,
+            status: updatedSeat.status,
+            preferredView: updatedSeat.preferredView
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update seat');
+      }
+
+      // Update the screen in state
+      setEditingScreen(updatedScreen);
+      
+      // Update the form data to reflect the changes
+      const updatedFormData: IScreenFormData = {
+        number: updatedScreen.number.toString(),
+        name: updatedScreen.name,
+        sections: updatedScreen.sections.map(section => ({
+          name: section.name,
+          rows: section.rows.toString(),
+          seatsPerRow: section.seatsPerRow.toString(),
+          startRow: section.startRow,
+          rowLabels: section.rowLabels,
+          seatLabels: section.seatLabels,
+          seats: section.seats
+        })),
+        layout: updatedScreen.layout,
+        seatingRules: updatedScreen.seatingRules
+      };
+      setFormData(updatedFormData);
+      
+      // Close the editor and clear selection
+      setOpenSeatEditor(false);
+      setSelectedSeat(null);
+      setError(null);
+    } catch (error) {
+      setError('Failed to update seat. Please try again.');
+      console.error('Error updating seat:', error);
+    }
   };
 
   const handleSubmit = async (screenData = formData) => {
@@ -414,10 +477,23 @@ export default function ManageScreens() {
           
           <TabPanel value={selectedTab} index={1}>
             {editingScreen && (
-              <SeatVisualizer
-                sections={editingScreen.sections}
+              <SeatLayout
+                sections={editingScreen.sections.map(section => ({
+                  name: section.name,
+                  seats: section.seats.map(seat => ({
+                    id: `${seat.row}-${seat.number}`,
+                    row: seat.row.toString(),
+                    number: seat.number,
+                    type: seat.type,
+                    isBooked: seat.status !== 'available',
+                    position: seat.position,
+                    preferredView: seat.preferredView,
+                    status: seat.status
+                  }))
+                }))}
                 layout={editingScreen.layout}
                 onSeatClick={handleSeatClick}
+                isAdminView={true}
               />
             )}
           </TabPanel>
