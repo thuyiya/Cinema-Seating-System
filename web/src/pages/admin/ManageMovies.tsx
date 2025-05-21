@@ -23,18 +23,19 @@ import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 
 interface Movie {
-  id: number;
+  id: string;
   title: string;
   overview: string;
   poster: string;
   releaseDate: string;
   rating: number;
+  duration: number;
   type: 'now_showing' | 'coming_soon';
 }
 
 interface DatabaseMovie extends Omit<Movie, 'poster'> {
   _id: string;
-  tmdbId: number;
+  tmdbId: string;
   posterPath: string;
   screeningDates: ScreeningDate[];
 }
@@ -96,7 +97,7 @@ export default function ManageMovies() {
     }
   };
 
-  const isMovieInDatabase = (movieId: number) => {
+  const isMovieInDatabase = (movieId: string) => {
     return databaseMovies.some(movie => movie.tmdbId === movieId);
   };
 
@@ -162,6 +163,7 @@ export default function ManageMovies() {
           posterPath: selectedMovie.poster,
           releaseDate: selectedMovie.releaseDate,
           rating: selectedMovie.rating,
+          duration: selectedMovie.duration,
           type: selectedTab,
           screeningDates: selectedMovie.screeningDates.map(date => ({
             startDate: date.startDate.toISOString(),
@@ -230,6 +232,9 @@ export default function ManageMovies() {
             <Typography variant="body2" color="text.secondary">
               Rating: {movie.rating.toFixed(1)}
             </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Duration: {movie.duration} Muniets
+            </Typography>
             {isInDatabase && (
               <Box mt={1}>
                 <Chip 
@@ -246,7 +251,7 @@ export default function ManageMovies() {
                 size="small" 
                 variant="outlined"
                 color="error"
-                onClick={() => handleDeleteMovie((movie as DatabaseMovie)._id)}
+                onClick={() => handleDeleteMovie(movie.id)}
               >
                 Remove from Cinema
               </Button>
@@ -313,6 +318,7 @@ export default function ManageMovies() {
         <DialogContent>
           {selectedMovie && (
             <Box sx={{ mt: 2 }}>
+              <img src={selectedMovie.poster} alt={selectedMovie.title} width={'100%'} height={150} style={{ objectFit: 'cover' }} />
               <Typography variant="h6" gutterBottom>
                 {selectedMovie.title}
               </Typography>

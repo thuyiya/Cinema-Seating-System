@@ -221,9 +221,49 @@ export default function ManageShowtimes() {
     });
   };
 
+  const calculateEndDateTime = (startDateTime: Date, durationMinutes: number): Date => {
+    return new Date(startDateTime.getTime() + durationMinutes * 60000);
+  };
+
+  const handleStartTimeChange = (newValue: Date | null) => {
+    if (!newValue) return;
+
+    const selectedMovie = movies.find(m => m._id === formData.movieId);
+    if (!selectedMovie) {
+      setFormData(prev => ({
+        ...prev,
+        startsAt: newValue
+      }));
+      return;
+    }
+
+    const endDateTime = calculateEndDateTime(newValue, selectedMovie.duration);
+    console.log('End date time:', endDateTime);
+    setFormData(prev => ({
+      ...prev,
+      startsAt: newValue,
+      endsAt: endDateTime
+    }));
+  };
+
+  const handleMovieChange = (e: any) => {
+    const movieId = e.target.value;
+    const selectedMovie = movies.find(m => m._id === movieId);
+    
+    setFormData(prev => {
+      const newData = { ...prev, movieId };
+      
+      if (selectedMovie && prev.startsAt) {
+        newData.endsAt = calculateEndDateTime(prev.startsAt, selectedMovie.duration);
+      }
+      
+      return newData;
+    });
+  };
+
   const handleSubmit = async () => {
     try {
-      if (!formData.movieId || !formData.screenId || !formData.startsAt || !formData.endsAt) {
+      if (!formData.movieId || !formData.screenId || !formData.startsAt) {
         throw new Error('Please fill in all required fields');
       }
 
@@ -417,12 +457,12 @@ export default function ManageShowtimes() {
                   <InputLabel>Movie</InputLabel>
                   <Select
                     value={formData.movieId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, movieId: e.target.value }))}
+                    onChange={handleMovieChange}
                     label="Movie"
                   >
                     {movies.map((movie) => (
                       <MenuItem key={movie._id} value={movie._id}>
-                        {movie.title}
+                        {movie.title} ({movie.duration} mins)
                       </MenuItem>
                     ))}
                   </Select>
@@ -448,29 +488,15 @@ export default function ManageShowtimes() {
                 <MobileDateTimePicker
                   label="Start Time"
                   value={formData.startsAt}
-                  onChange={(newValue) => {
-                    if (newValue) {
-                      setFormData(prev => ({
-                        ...prev,
-                        startsAt: newValue
-                      }));
-                    }
-                  }}
+                  onChange={handleStartTimeChange}
                   sx={{ width: '100%' }}
                 />
               </Grid>
               <Grid item xs={12}>
                 <MobileDateTimePicker
-                  label="End Time"
+                  label="End Time (Auto-calculated)"
                   value={formData.endsAt}
-                  onChange={(newValue) => {
-                    if (newValue) {
-                      setFormData(prev => ({
-                        ...prev,
-                        endsAt: newValue
-                      }));
-                    }
-                  }}
+                  disabled
                   sx={{ width: '100%' }}
                 />
               </Grid>

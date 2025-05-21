@@ -12,6 +12,7 @@ export interface IMovie extends Document {
   posterPath: string;
   releaseDate: Date;
   rating: number;
+  duration: number;  // Duration in minutes
   type: 'now_showing' | 'coming_soon';
   screeningDates: IScreeningDate[];
   createdAt: Date;
@@ -56,6 +57,11 @@ const movieSchema = new Schema<IMovie>({
     required: true,
     min: 0,
     max: 10
+  },
+  duration: {
+    type: Number,
+    required: true,
+    min: 1
   },
   type: {
     type: String,

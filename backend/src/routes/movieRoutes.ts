@@ -19,6 +19,7 @@ router.post('/',
         posterPath,
         releaseDate,
         rating,
+        duration,
         type,
         screeningDates
       } = req.body;
@@ -42,6 +43,13 @@ router.post('/',
       if (typeof rating !== 'number' || rating < 0 || rating > 10) {
         return res.status(400).json({
           message: 'Rating must be a number between 0 and 10'
+        });
+      }
+
+      // Validate duration
+      if (typeof duration !== 'number' || duration < 1) {
+        return res.status(400).json({
+          message: 'Duration must be a positive number in minutes'
         });
       }
 
@@ -70,6 +78,7 @@ router.post('/',
         posterPath,
         releaseDate: new Date(releaseDate),
         rating,
+        duration,
         type,
         screeningDates: screeningDates.map(date => ({
           startDate: new Date(date.startDate),
@@ -107,7 +116,7 @@ router.get('/', async (req: Request, res: Response) => {
         new Date(date.endDate) >= currentDate
       )
     ).map(movie => ({
-      id: movie._id,
+      _id: movie._id,
       tmdbId: movie.tmdbId,
       title: movie.title,
       overview: movie.overview,
@@ -115,14 +124,15 @@ router.get('/', async (req: Request, res: Response) => {
       releaseDate: movie.releaseDate,
       type: movie.type,
       screeningDates: movie.screeningDates,
-      rating: movie.rating
+      rating: movie.rating,
+      duration: movie.duration
     }));
 
     const comingSoon = movies.filter(movie => 
       movie.type === 'coming_soon' ||
       movie.screeningDates.every((date: IScreeningDate) => new Date(date.startDate) > currentDate)
     ).map(movie => ({
-      id: movie._id,
+      _id: movie._id,
       tmdbId: movie.tmdbId,
       title: movie.title,
       overview: movie.overview,
