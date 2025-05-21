@@ -1,36 +1,15 @@
-import { Router, RequestHandler } from 'express';
-import { body } from 'express-validator';
-import { login, register } from '../controllers/authController';
+import { Router } from 'express';
+import type { RequestHandler } from 'express';
+import { login, registerUser, registerAdmin } from '../controllers/authController';
+import { validateAdminSecretKey } from '../middleware/auth';
 
 const router = Router();
 
-// Validation middleware
-const registerValidation = [
-  body('name')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Name must be at least 2 characters long'),
-  body('email')
-    .trim()
-    .isEmail()
-    .withMessage('Please enter a valid email'),
-  body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-];
+// Public routes
+router.post('/login', login as RequestHandler);
+router.post('/register', registerUser as RequestHandler);
 
-const loginValidation = [
-  body('email')
-    .trim()
-    .isEmail()
-    .withMessage('Please enter a valid email'),
-  body('password')
-    .exists()
-    .withMessage('Password is required'),
-];
-
-// Routes
-router.post('/register', registerValidation, register as RequestHandler);
-router.post('/login', loginValidation, login as RequestHandler);
+// Admin registration (protected by secret key)
+router.post('/admin/register', validateAdminSecretKey as RequestHandler, registerAdmin as RequestHandler);
 
 export default router; 
