@@ -10,53 +10,49 @@ import {
   CircularProgress,
   Divider,
 } from '@mui/material';
-
-interface Seat {
-  id: string;
-  row: string;
-  number: number;
-  isBooked: boolean;
-}
-
-interface ScreeningDetails {
-  id: string;
-  screenNumber: number;
-  startsAt: string;
-  movie: {
-    title: string;
-  };
-  seats: Seat[];
-}
+import type { Showtime, Seat } from '../../types/movie';
 
 export default function SelectSeats() {
-  const [screening, setScreening] = useState<ScreeningDetails | null>(null);
+  const [showtime, setShowtime] = useState<Showtime | null>(null);
+  const [seats, setSeats] = useState<Seat[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { movieId, screenId } = useParams();
+  const { movieId, showtimeId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchScreeningDetails = async () => {
+    const fetchShowtimeAndSeats = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/screens/${screenId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch screening details');
+        // Fetch showtime details
+        const showtimeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimeId}`);
+        if (!showtimeResponse.ok) {
+          throw new Error('Failed to fetch showtime details');
         }
-        const data = await response.json();
-        setScreening(data);
+        const showtimeData = await showtimeResponse.json();
+        setShowtime(showtimeData);
+
+        // Fetch seats for the showtime
+        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimeId}/seats`);
+        if (!seatsResponse.ok) {
+          throw new Error('Failed to fetch seats');
+        }
+        const seatsData = await seatsResponse.json();
+        setSeats(seatsData);
       } catch (error) {
-        setError('Failed to load screening details. Please try again later.');
+        setError('Failed to load seating information. Please try again later.');
         console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchScreeningDetails();
-  }, [screenId]);
+    if (showtimeId) {
+      fetchShowtimeAndSeats();
+    }
+  }, [showtimeId]);
 
-  const handleSeatClick = (seatId: string) => {
+  const handleSeatClick = (seatId: string, seatType: string) => {
     setSelectedSeats(prev => {
       if (prev.includes(seatId)) {
         return prev.filter(id => id !== seatId);
@@ -65,13 +61,27 @@ export default function SelectSeats() {
     });
   };
 
+  const calculateTotalPrice = () => {
+    if (!showtime) return 0;
+    return selectedSeats.reduce((total, seatId) => {
+      const seat = seats.find(s => s.id === seatId);
+      if (!seat) return total;
+      return total + showtime.price[seat.type];
+    }, 0);
+  };
+
   const handleProceedToPayment = () => {
+    if (!showtime) return;
+
     navigate('/payment', {
       state: {
         movieId,
-        screeningId: screenId,
+        showtimeId,
+        movieTitle: showtime.movieId.title,
+        screenName: `Screen ${showtime.screenId.number} - ${showtime.screenId.name}`,
+        showtime: `${showtime.date} ${showtime.startTime}`,
         seats: selectedSeats,
-        amount: selectedSeats.length * 10 // $10 per seat
+        totalAmount: calculateTotalPrice()
       }
     });
   };
@@ -84,52 +94,47 @@ export default function SelectSeats() {
     );
   }
 
-  if (error || !screening) {
+  if (error || !showtime) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Typography color="error" align="center">
-          {error || 'Screening not found'}
+          {error || 'Showtime not found'}
         </Typography>
       </Container>
     );
   }
 
   // Group seats by row
-  const seatsByRow = screening.seats.reduce((acc, seat) => {
+  const seatsByRow = seats.reduce((acc, seat) => {
     if (!acc[seat.row]) {
       acc[seat.row] = [];
     }
     acc[seat.row].push(seat);
     return acc;
-  }, {} as Record<string, Seat[]>);
+  }, {} as { [key: string]: Seat[] });
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Select Seats
-      </Typography>
-      <Typography variant="h5" gutterBottom color="primary">
-        {screening.movie.title}
-      </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        Screen {screening.screenNumber}
-      </Typography>
-      <Divider sx={{ my: 3 }} />
-
       <Box sx={{ mb: 4 }}>
-        <Paper 
-          elevation={3}
-          sx={{ 
-            p: 2, 
-            backgroundColor: 'background.paper',
-            textAlign: 'center',
-            mb: 4
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Screen
-          </Typography>
-        </Paper>
+        <Typography variant="h4" gutterBottom>
+          Select Seats
+        </Typography>
+        <Typography variant="h5" color="primary" gutterBottom>
+          {showtime.movieId.title}
+        </Typography>
+        <Typography variant="subtitle1">
+          Screen {showtime.screenId.number} - {showtime.screenId.name}
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          {showtime.date} {showtime.startTime} - {showtime.endTime}
+        </Typography>
+      </Box>
+
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h6" gutterBottom align="center">
+          Screen
+        </Typography>
+        <Divider sx={{ mb: 4 }} />
 
         <Box sx={{ mb: 4 }}>
           {Object.entries(seatsByRow).map(([row, seats]) => (
@@ -144,12 +149,14 @@ export default function SelectSeats() {
                       <Button
                         variant={selectedSeats.includes(seat.id) ? "contained" : "outlined"}
                         disabled={seat.isBooked}
-                        onClick={() => handleSeatClick(seat.id)}
+                        onClick={() => handleSeatClick(seat.id, seat.type)}
                         sx={{
                           minWidth: '40px',
                           height: '40px',
                           p: 0,
-                          backgroundColor: seat.isBooked ? 'grey.300' : undefined
+                          backgroundColor: seat.isBooked ? 'grey.300' : 
+                            seat.type === 'vip' ? 'secondary.light' :
+                            seat.type === 'accessible' ? 'info.light' : undefined
                         }}
                       >
                         {seat.number}
@@ -162,12 +169,33 @@ export default function SelectSeats() {
           ))}
         </Box>
 
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Seat Types:
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item>
+              <Button variant="outlined" disabled>Standard (${showtime.price.standard})</Button>
+            </Grid>
+            <Grid item>
+              <Button variant="outlined" disabled sx={{ backgroundColor: 'secondary.light' }}>
+                VIP (${showtime.price.vip})
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button variant="outlined" disabled sx={{ backgroundColor: 'info.light' }}>
+                Accessible (${showtime.price.accessible})
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+
         <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">
             Selected Seats: {selectedSeats.length}
           </Typography>
           <Typography variant="h6">
-            Total: ${selectedSeats.length * 10}
+            Total: ${calculateTotalPrice()}
           </Typography>
         </Box>
 
@@ -182,7 +210,7 @@ export default function SelectSeats() {
         >
           Proceed to Payment
         </Button>
-      </Box>
+      </Paper>
     </Container>
   );
 } 

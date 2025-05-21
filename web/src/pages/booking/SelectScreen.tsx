@@ -12,42 +12,35 @@ import {
   Divider,
 } from '@mui/material';
 import { format } from 'date-fns';
-
-interface Screening {
-  id: string;
-  screenNumber: number;
-  startsAt: string;
-  endsAt: string;
-  movie: {
-    title: string;
-  };
-}
+import type { Showtime } from '../../types/movie';
 
 export default function SelectScreen() {
-  const [screenings, setScreenings] = useState<Screening[]>([]);
+  const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { movieId } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchScreenings = async () => {
+    const fetchShowtimes = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/movies/${movieId}/screens`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes?movieId=${movieId}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch screenings');
+          throw new Error('Failed to fetch showtimes');
         }
         const data = await response.json();
-        setScreenings(data);
+        setShowtimes(data);
       } catch (error) {
-        setError('Failed to load screenings. Please try again later.');
+        setError('Failed to load showtimes. Please try again later.');
         console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchScreenings();
+    if (movieId) {
+      fetchShowtimes();
+    }
   }, [movieId]);
 
   if (loading) {
@@ -68,46 +61,57 @@ export default function SelectScreen() {
     );
   }
 
-  // Group screenings by screen number
-  const screeningsByScreen = screenings.reduce((acc, screening) => {
-    const screen = acc.find(s => s.screenNumber === screening.screenNumber);
-    if (screen) {
-      screen.times.push(screening);
-    } else {
-      acc.push({
-        screenNumber: screening.screenNumber,
-        times: [screening]
-      });
+  // Group showtimes by date
+  const showtimesByDate = showtimes.reduce((acc, showtime) => {
+    const date = format(new Date(showtime.date), 'yyyy-MM-dd');
+    if (!acc[date]) {
+      acc[date] = [];
     }
+    acc[date].push(showtime);
     return acc;
-  }, [] as { screenNumber: number; times: Screening[] }[]);
+  }, {} as { [key: string]: Showtime[] });
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Select Screen & Time
+        Select Showtime
       </Typography>
-      {screenings[0]?.movie && (
+      {showtimes[0]?.movieId && (
         <Typography variant="h5" gutterBottom color="primary">
-          {screenings[0].movie.title}
+          {showtimes[0].movieId.title}
         </Typography>
       )}
       <Divider sx={{ my: 3 }} />
       
-      {screeningsByScreen.map(({ screenNumber, times }) => (
-        <Card key={screenNumber} sx={{ mb: 3 }}>
+      {Object.entries(showtimesByDate).map(([date, dateShowtimes]) => (
+        <Card key={date} sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Screen {screenNumber}
+              {format(new Date(date), 'EEEE, MMMM d, yyyy')}
             </Typography>
             <Grid container spacing={2}>
-              {times.map((screening) => (
-                <Grid item key={screening.id}>
+              {dateShowtimes.map((showtime) => (
+                <Grid item key={showtime._id} xs={12} sm={6} md={4}>
                   <Button
                     variant="outlined"
-                    onClick={() => navigate(`/booking/${movieId}/screen/${screening.id}`)}
+                    fullWidth
+                    onClick={() => navigate(`/booking/${movieId}/${showtime._id}`)}
+                    sx={{ textAlign: 'left', display: 'block' }}
                   >
-                    {format(new Date(screening.startsAt), 'h:mm a')}
+                    <Typography variant="subtitle1">
+                      {showtime.startTime} - {showtime.endTime}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Screen {showtime.screenId.number} - {showtime.screenId.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Standard: ${showtime.price.standard} | VIP: ${showtime.price.vip}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Available seats: {
+                        Object.values(showtime.availableSeats).reduce((a, b) => a + b, 0)
+                      }
+                    </Typography>
                   </Button>
                 </Grid>
               ))}

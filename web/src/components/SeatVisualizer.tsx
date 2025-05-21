@@ -3,8 +3,8 @@ import { Box, Paper, Typography, Tooltip, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const StyledSeat = styled(Paper)(({ theme }) => ({
-  width: 30,
-  height: 30,
+  width: 40,
+  height: 40,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -28,6 +28,7 @@ const StyledSeat = styled(Paper)(({ theme }) => ({
   '&:hover': {
     opacity: 0.8,
   },
+  color: '#333333'
 }));
 
 interface Seat {
