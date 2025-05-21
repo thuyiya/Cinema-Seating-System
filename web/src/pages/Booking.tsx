@@ -1,10 +1,13 @@
 import { Container, Typography, Box, Paper, Stepper, Step, StepLabel } from '@mui/material';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const steps = ['Select Movie', 'Choose Screen', 'Select Seats', 'Payment'];
 
 export default function Booking() {
   const location = useLocation();
+  const { user } = useAuth();
+
   const currentStep = () => {
     const path = location.pathname;
     if (path === '/booking') return 0;

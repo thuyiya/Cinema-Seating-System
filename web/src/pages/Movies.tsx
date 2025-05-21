@@ -45,7 +45,6 @@ const Movies = () => {
   if (loading) {
     return (
       <div className="loading-container">
-        <NavBar />
         <div className="movie-row-skeleton">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="movie-card-skeleton">
@@ -63,7 +62,6 @@ const Movies = () => {
   if (error) {
     return (
       <div className="error-container">
-        <NavBar />
         <div className="error">Error: {error}</div>
         <Footer />
       </div>
@@ -72,8 +70,6 @@ const Movies = () => {
 
   return (
     <div className="app-container">
-      <NavBar />
-      
       <main className="main-content">
         <section className="movie-section">
           <h2 className="section-title">Now Showing</h2>
@@ -133,37 +129,6 @@ const Movies = () => {
 
       <Footer />
     </div>
-  );
-};
-
-const NavBar = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
-  
-  return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <h1 className="logo" onClick={() => navigate('/')}>CineMax</h1>
-        <div className="nav-links">
-          <button onClick={() => navigate('/')}>Home</button>
-          <button onClick={() => navigate('/booking')}>Book Tickets</button>
-          {isAuthenticated ? (
-            <>
-              <button onClick={() => navigate('/admin/dashboard')}>Admin Dashboard</button>
-              <button onClick={() => {
-                logout();
-                navigate('/');
-              }}>Logout</button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => navigate('/admin/login')}>Login</button>
-              <button onClick={() => navigate('/admin/register')}>Register</button>
-            </>
-          )}
-        </div>
-      </div>
-    </nav>
   );
 };
 

@@ -11,7 +11,8 @@ import {
   Link,
   Alert,
   Paper,
-  useTheme
+  useTheme,
+  Divider
 } from '@mui/material';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 
@@ -22,6 +23,9 @@ const validationSchema = Yup.object({
   email: Yup.string()
     .email('Invalid email address')
     .required('Email is required'),
+  mobile: Yup.string()
+    .matches(/^[0-9]{10}$/, 'Mobile number must be 10 digits')
+    .required('Mobile number is required'),
   password: Yup.string()
     .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),
@@ -39,14 +43,14 @@ export default function Register() {
     initialValues: {
       name: '',
       email: '',
+      mobile: '',
       password: '',
       confirmPassword: '',
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('http://localhost:3001/api/auth/register', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,6 +58,7 @@ export default function Register() {
           body: JSON.stringify({
             name: values.name,
             email: values.email,
+            mobile: values.mobile,
             password: values.password,
           }),
         });
@@ -64,7 +69,7 @@ export default function Register() {
         }
 
         // Registration successful
-        navigate('/admin/login', { state: { message: 'Registration successful. Please login.' } });
+        navigate('/login', { state: { message: 'Registration successful. Please login.' } });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       }
@@ -75,11 +80,11 @@ export default function Register() {
     <Container component="main" maxWidth="xs">
       <Box
         sx={{
-          marginTop: 8,
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          minHeight: '100vh',
+          justifyContent: 'center',
           py: 4,
         }}
       >
@@ -93,7 +98,6 @@ export default function Register() {
             width: '100%',
             background: theme.palette.background.paper,
             borderRadius: 2,
-            position: 'relative',
           }}
         >
           <Box
@@ -101,7 +105,7 @@ export default function Register() {
               width: 40,
               height: 40,
               borderRadius: '50%',
-              backgroundColor: theme.palette.secondary.main,
+              backgroundColor: theme.palette.primary.main,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -112,7 +116,7 @@ export default function Register() {
           </Box>
 
           <Typography component="h1" variant="h5" gutterBottom>
-            Admin Registration
+            Create Account
           </Typography>
 
           {error && (
@@ -166,6 +170,19 @@ export default function Register() {
             <TextField
               margin="normal"
               fullWidth
+              id="mobile"
+              label="Mobile Number"
+              name="mobile"
+              autoComplete="tel"
+              value={formik.values.mobile}
+              onChange={formik.handleChange}
+              error={formik.touched.mobile && Boolean(formik.errors.mobile)}
+              helperText={formik.touched.mobile && formik.errors.mobile}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="normal"
+              fullWidth
               name="password"
               label="Password"
               type="password"
@@ -195,33 +212,28 @@ export default function Register() {
               type="submit"
               fullWidth
               variant="contained"
-              color="secondary"
-              sx={{
-                mt: 1,
-                mb: 3,
-                py: 1.5,
-                fontSize: '1rem',
-                fontWeight: 600,
-              }}
-              disabled={formik.isSubmitting}
+              sx={{ mt: 1, mb: 2 }}
             >
               Sign Up
             </Button>
+
+            <Divider sx={{ my: 2 }}>or</Divider>
+
             <Box sx={{ textAlign: 'center' }}>
-              <Link 
-                component={RouterLink} 
-                to="/admin/login" 
-                variant="body2"
-                sx={{
-                  color: theme.palette.secondary.main,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
+              <Typography variant="body2" color="text.secondary">
+                Already have an account?{' '}
+                <Link component={RouterLink} to="/login" variant="body2">
+                  Sign in
+                </Link>
+              </Typography>
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ mt: 2 }}
+                onClick={() => navigate('/booking')}
               >
-                {"Already have an account? Sign In"}
-              </Link>
+                Continue as Guest
+              </Button>
             </Box>
           </Box>
         </Paper>

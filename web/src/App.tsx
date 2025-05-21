@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider, createTheme, Box } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import Movies from './pages/Movies';
 import Booking from './pages/Booking';
 import Payment from './pages/Payment';
@@ -21,6 +22,7 @@ import ManageShowtimes from './pages/admin/ManageShowtimes';
 import SelectMovie from './pages/booking/SelectMovie';
 import SelectScreen from './pages/booking/SelectScreen';
 import SelectSeats from './pages/booking/SelectSeats';
+import Navbar from './components/Navbar';
 
 // Import Roboto font
 import '@fontsource/roboto/300.css';
@@ -82,29 +84,36 @@ function App() {
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <AuthProvider>
           <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<AnimatedPage><Movies /></AnimatedPage>} />
-              <Route path="/admin/login" element={<Login />} />
-              
-              {/* Booking Flow - Protected for authenticated users */}
-              <Route path="/booking" element={<ProtectedRoute requireAdmin={false}><Booking /></ProtectedRoute>}>
-                <Route index element={<SelectMovie />} />
-                <Route path=":movieId" element={<SelectScreen />} />
-                <Route path=":movieId/screen/:screenId" element={<SelectSeats />} />
-              </Route>
-              <Route path="/payment" element={<ProtectedRoute requireAdmin={false}><Payment /></ProtectedRoute>} />
-              <Route path="/ticket/:bookingId" element={<ProtectedRoute requireAdmin={false}><Ticket /></ProtectedRoute>} />
+            <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+              <Navbar />
+              <Box component="main" sx={{ flex: 1, p: 2 }}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<AnimatedPage><Movies /></AnimatedPage>} />
+                  <Route path="/movies" element={<AnimatedPage><Movies /></AnimatedPage>} />
+                  <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
+                  <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
+                  
+                  {/* Booking Flow - Allow both authenticated and guest users */}
+                  <Route path="/booking" element={<AnimatedPage><Booking /></AnimatedPage>}>
+                    <Route index element={<SelectMovie />} />
+                    <Route path=":movieId" element={<SelectScreen />} />
+                    <Route path=":movieId/screen/:screenId" element={<SelectSeats />} />
+                  </Route>
+                  <Route path="/payment" element={<AnimatedPage><Payment /></AnimatedPage>} />
+                  <Route path="/ticket/:bookingId" element={<AnimatedPage><Ticket /></AnimatedPage>} />
 
-              {/* Admin Routes - Protected for admin users only */}
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/halls" element={<ProtectedRoute><ManageHalls /></ProtectedRoute>} />
-              <Route path="/admin/screens" element={<ProtectedRoute><ManageScreens /></ProtectedRoute>} />
-              <Route path="/admin/showtimes" element={<ProtectedRoute><ManageShowtimes /></ProtectedRoute>} />
+                  {/* Admin Routes - Protected for admin users only */}
+                  <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>} />
+                  <Route path="/admin/halls" element={<ProtectedRoute requireAdmin={true}><ManageHalls /></ProtectedRoute>} />
+                  <Route path="/admin/screens" element={<ProtectedRoute requireAdmin={true}><ManageScreens /></ProtectedRoute>} />
+                  <Route path="/admin/showtimes" element={<ProtectedRoute requireAdmin={true}><ManageShowtimes /></ProtectedRoute>} />
 
-              {/* 404 Route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                  {/* 404 Route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Box>
+            </Box>
           </Router>
         </AuthProvider>
       </LocalizationProvider>

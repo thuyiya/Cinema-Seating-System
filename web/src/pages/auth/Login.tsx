@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -8,6 +8,8 @@ import {
   Button,
   Box,
   Alert,
+  Link,
+  Divider,
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 
@@ -62,13 +64,22 @@ export default function Login() {
     <Container component="main" maxWidth="xs">
       <Box
         sx={{
-          marginTop: 8,
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 4, 
+            width: '100%',
+            borderRadius: 2,
+            bgcolor: 'background.paper',
+          }}
+        >
           <Typography component="h1" variant="h5" align="center" gutterBottom>
             Sign in
           </Typography>
@@ -109,6 +120,25 @@ export default function Login() {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
+
+            <Divider sx={{ my: 2 }}>or</Divider>
+
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Don't have an account?{' '}
+                <Link component={RouterLink} to="/register" variant="body2">
+                  Sign up
+                </Link>
+              </Typography>
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ mt: 1 }}
+                onClick={() => navigate('/booking')}
+              >
+                Continue as Guest
+              </Button>
+            </Box>
           </Box>
         </Paper>
       </Box>

@@ -228,3 +228,7 @@ pm2 start dist/server.js
 | TMDB_API_KEY    | The Movie Database API key          | (required for seeding) |
 | PORT            | Application port                    | 3001                |
 | NODE_ENV        | Node environment                    | development         |
+
+
+### For check your running docker
+`docker ps | grep postgres`
