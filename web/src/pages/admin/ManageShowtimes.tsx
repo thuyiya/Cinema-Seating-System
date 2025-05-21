@@ -23,6 +23,7 @@ import {
   Select,
   MenuItem,
   Grid,
+  Chip,
 } from '@mui/material';
 import { MobileDateTimePicker } from '@mui/x-date-pickers/MobileDateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,56 +33,84 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { format } from 'date-fns';
 
 interface Movie {
-  id: string;
+  _id: string;
   title: string;
-  duration: number;
+  duration: number;  // Duration in minutes
 }
 
 interface Screen {
-  id: string;
+  _id: string;
   number: number;
-  name?: string;
-  hall?: {
-    name: string;
-  };
-  sections: any[];
-  totalCapacity: number;
+  name: string;
 }
 
-interface Screening {
-  id: string;
+interface Price {
+  standard: number;
+  vip: number;
+  accessible: number;
+}
+
+interface AvailableSeats {
+  standard: number;
+  vip: number;
+  accessible: number;
+}
+
+interface Showtime {
+  _id: string;
+  movieId: Movie;
+  screenId: Screen;
+  date: string;
+  startTime: string;
+  endTime: string;
+  price: Price;
+  availableSeats: AvailableSeats;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FormData {
   movieId: string;
   screenId: string;
-  startsAt: string;
-  endsAt: string;
-  movie: Movie;
-  screen: Screen;
+  startsAt: Date;
+  endsAt: Date;
+  price: {
+    standard: number;
+    vip: number;
+    accessible: number;
+  };
 }
 
 export default function ManageShowtimes() {
-  const [showtimes, setShowtimes] = useState<Screening[]>([]);
+  const [showtimes, setShowtimes] = useState<Showtime[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [screens, setScreens] = useState<Screen[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingScreening, setEditingScreening] = useState<Screening | null>(null);
-  const [formData, setFormData] = useState({
+  const [editingShowtime, setEditingShowtime] = useState<Showtime | null>(null);
+  const [formData, setFormData] = useState<FormData>({
     movieId: '',
     screenId: '',
     startsAt: new Date(),
-    endsAt: new Date()
+    endsAt: new Date(Date.now() + (2 * 60 * 60 * 1000)),
+    price: {
+      standard: 10,
+      vip: 15,
+      accessible: 8
+    }
   });
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    Promise.all([fetchScreenings(), fetchMovies(), fetchScreens()]).finally(() =>
+    Promise.all([fetchShowtimes(), fetchMovies(), fetchScreens()]).finally(() =>
       setLoading(false)
     );
   }, []);
 
-  const fetchScreenings = async () => {
+  const fetchShowtimes = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/showtimes`, {
         headers: {
@@ -90,12 +119,12 @@ export default function ManageShowtimes() {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch screenings');
+        throw new Error(errorData.message || 'Failed to fetch showtimes');
       }
       const data = await response.json();
       setShowtimes(data);
     } catch (error) {
-      setError('Failed to load screenings. Please try again later.');
+      setError('Failed to load showtimes. Please try again later.');
       console.error('Error:', error);
     }
   };
@@ -132,13 +161,10 @@ export default function ManageShowtimes() {
       }
       const data = await response.json();
       const formattedScreens = Array.isArray(data) ? data.map((screen: any) => ({
-        id: screen._id,
+        _id: screen._id,
         number: screen.number,
         name: screen.name,
-        sections: screen.sections,
-        totalCapacity: screen.totalCapacity
       })) : [];
-      console.log('Fetched screens:', formattedScreens);
       setScreens(formattedScreens);
     } catch (error) {
       console.error('Error fetching screens:', error);
@@ -146,22 +172,34 @@ export default function ManageShowtimes() {
     }
   };
 
-  const handleOpenDialog = (screening?: Screening) => {
-    if (screening) {
-      setEditingScreening(screening);
+  const handleOpenDialog = (showtime?: Showtime) => {
+    if (showtime) {
+      setEditingShowtime(showtime);
       setFormData({
-        movieId: screening.movieId,
-        screenId: screening.screenId,
-        startsAt: new Date(screening.startsAt),
-        endsAt: new Date(screening.endsAt)
+        movieId: showtime.movieId._id,
+        screenId: showtime.screenId._id,
+        startsAt: new Date(showtime.date),
+        endsAt: new Date(showtime.endTime),
+        price: {
+          standard: showtime.price.standard,
+          vip: showtime.price.vip,
+          accessible: showtime.price.accessible
+        }
       });
     } else {
-      setEditingScreening(null);
+      setEditingShowtime(null);
+      const now = new Date();
+      const twoHoursLater = new Date(now.getTime() + (2 * 60 * 60 * 1000)); // 2 hours later
       setFormData({
         movieId: '',
         screenId: '',
-        startsAt: new Date(),
-        endsAt: new Date()
+        startsAt: now,
+        endsAt: twoHoursLater,
+        price: {
+          standard: 10,
+          vip: 15,
+          accessible: 8
+        }
       });
     }
     setOpenDialog(true);
@@ -169,57 +207,53 @@ export default function ManageShowtimes() {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setEditingScreening(null);
+    setEditingShowtime(null);
     setFormData({
       movieId: '',
       screenId: '',
       startsAt: new Date(),
-      endsAt: new Date()
-    });
-  };
-
-  const calculateEndTime = (movieId: string, startTime: Date): Date => {
-    const movie = movies.find((m) => m.id === movieId);
-    if (!movie) {
-      return new Date(startTime.getTime() + 120 * 60000);
-    }
-    return new Date(startTime.getTime() + movie.duration * 60000);
-  };
-
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        return 'Invalid Date';
+      endsAt: new Date(Date.now() + (2 * 60 * 60 * 1000)),
+      price: {
+        standard: 10,
+        vip: 15,
+        accessible: 8
       }
-      return format(date, 'PPpp');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid Date';
-    }
+    });
   };
 
   const handleSubmit = async () => {
     try {
-      if (!formData.movieId || !formData.screenId || !formData.startsAt) {
+      if (!formData.movieId || !formData.screenId || !formData.startsAt || !formData.endsAt) {
         throw new Error('Please fill in all required fields');
       }
 
-      const startDate = new Date(formData.startsAt);
+      // Ensure we have valid Date objects
+      const startDate = formData.startsAt instanceof Date ? formData.startsAt : new Date(formData.startsAt);
+      const endDate = formData.endsAt instanceof Date ? formData.endsAt : new Date(formData.endsAt);
+
+      // Validate dates
       if (isNaN(startDate.getTime())) {
-        throw new Error('Invalid start date selected');
+        throw new Error('Invalid start date');
+      }
+      if (isNaN(endDate.getTime())) {
+        throw new Error('Invalid end date');
       }
 
-      const url = editingScreening
-        ? `${API_BASE_URL}/api/showtimes/${editingScreening.id}`
-        : `${API_BASE_URL}/api/showtimes`;
+      // Validate that end date is after start date
+      if (endDate <= startDate) {
+        throw new Error('End time must be after start time');
+      }
 
-      const endsAt = calculateEndTime(formData.movieId, startDate);
+      const url = editingShowtime
+        ? `${API_BASE_URL}/api/showtimes/${editingShowtime._id}`
+        : `${API_BASE_URL}/api/showtimes`;
       
+      // Format date and time as required by backend
+      const formatTimeOnly = (date: Date) => format(date, 'HH:mm');
+      const formatDateOnly = (date: Date) => format(date, 'yyyy-MM-dd');
+
       const response = await fetch(url, {
-        method: editingScreening ? 'PUT' : 'POST',
+        method: editingShowtime ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -227,8 +261,10 @@ export default function ManageShowtimes() {
         body: JSON.stringify({
           movieId: formData.movieId,
           screenId: formData.screenId,
-          startsAt: startDate.toISOString(),
-          endsAt: endsAt.toISOString(),
+          date: formatDateOnly(startDate),
+          startTime: formatTimeOnly(startDate),
+          endTime: formatTimeOnly(endDate),
+          price: formData.price
         }),
       });
 
@@ -238,7 +274,7 @@ export default function ManageShowtimes() {
       }
 
       handleCloseDialog();
-      fetchScreenings();
+      fetchShowtimes();
     } catch (error) {
       console.error('Error saving showtime:', error);
       setError(error instanceof Error ? error.message : 'Failed to save showtime. Please try again.');
@@ -263,7 +299,7 @@ export default function ManageShowtimes() {
         throw new Error(errorData.message || 'Failed to delete showtime');
       }
 
-      fetchScreenings();
+      fetchShowtimes();
     } catch (error) {
       console.error('Error deleting showtime:', error);
       setError(error instanceof Error ? error.message : 'Failed to delete showtime. Please try again.');
@@ -306,25 +342,61 @@ export default function ManageShowtimes() {
               <TableRow>
                 <TableCell>Movie</TableCell>
                 <TableCell>Screen</TableCell>
-                <TableCell>Hall</TableCell>
-                <TableCell>Start Time</TableCell>
-                <TableCell>End Time</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Time</TableCell>
+                <TableCell>Prices</TableCell>
+                <TableCell>Available Seats</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {showtimes.map((showtime) => (
-                <TableRow key={showtime.id}>
-                  <TableCell>{showtime.movie?.title || 'N/A'}</TableCell>
-                  <TableCell>Screen {showtime.screen?.number || 'N/A'}</TableCell>
-                  <TableCell>{showtime.screen?.name || 'N/A'}</TableCell>
-                  <TableCell>{formatDate(showtime.startsAt)}</TableCell>
-                  <TableCell>{formatDate(showtime.endsAt)}</TableCell>
+                <TableRow key={showtime._id}>
+                  <TableCell>{showtime.movieId.title}</TableCell>
+                  <TableCell>
+                    Screen {showtime.screenId.number} - {showtime.screenId.name}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(showtime.date), 'PP')}
+                  </TableCell>
+                  <TableCell>
+                    {showtime.startTime} - {showtime.endTime}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" component="div">
+                      Standard: ${showtime.price.standard}
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                      VIP: ${showtime.price.vip}
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                      Accessible: ${showtime.price.accessible}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" component="div">
+                      Standard: {showtime.availableSeats.standard}
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                      VIP: {showtime.availableSeats.vip}
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                      Accessible: {showtime.availableSeats.accessible}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={showtime.isActive ? "Active" : "Inactive"}
+                      color={showtime.isActive ? "success" : "default"}
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell align="right">
                     <IconButton onClick={() => handleOpenDialog(showtime)} color="primary">
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleDelete(showtime.id)} color="error">
+                    <IconButton onClick={() => handleDelete(showtime._id)} color="error">
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
@@ -336,7 +408,7 @@ export default function ManageShowtimes() {
 
         <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
           <DialogTitle>
-            {editingScreening ? 'Edit Showtime' : 'Add New Showtime'}
+            {editingShowtime ? 'Edit Showtime' : 'Add New Showtime'}
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -349,7 +421,7 @@ export default function ManageShowtimes() {
                     label="Movie"
                   >
                     {movies.map((movie) => (
-                      <MenuItem key={movie.id} value={movie.id}>
+                      <MenuItem key={movie._id} value={movie._id}>
                         {movie.title}
                       </MenuItem>
                     ))}
@@ -365,8 +437,8 @@ export default function ManageShowtimes() {
                     label="Screen"
                   >
                     {screens.map((screen) => (
-                      <MenuItem key={screen.id} value={screen.id}>
-                        Screen {screen.number} - {screen.name || 'N/A'} ({screen.totalCapacity} seats)
+                      <MenuItem key={screen._id} value={screen._id}>
+                        Screen {screen.number} - {screen.name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -402,12 +474,56 @@ export default function ManageShowtimes() {
                   sx={{ width: '100%' }}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Ticket Prices
+                </Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  fullWidth
+                  label="Standard Price"
+                  type="number"
+                  value={formData.price.standard}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    price: { ...prev.price, standard: Number(e.target.value) }
+                  }))}
+                  InputProps={{ inputProps: { min: 0 } }}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  fullWidth
+                  label="VIP Price"
+                  type="number"
+                  value={formData.price.vip}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    price: { ...prev.price, vip: Number(e.target.value) }
+                  }))}
+                  InputProps={{ inputProps: { min: 0 } }}
+                />
+              </Grid>
+              <Grid item xs={4}>
+                <TextField
+                  fullWidth
+                  label="Accessible Price"
+                  type="number"
+                  value={formData.price.accessible}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    price: { ...prev.price, accessible: Number(e.target.value) }
+                  }))}
+                  InputProps={{ inputProps: { min: 0 } }}
+                />
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button onClick={handleSubmit} variant="contained" color="primary">
-              {editingScreening ? 'Save Changes' : 'Add Showtime'}
+              {editingShowtime ? 'Save Changes' : 'Add Showtime'}
             </Button>
           </DialogActions>
         </Dialog>
