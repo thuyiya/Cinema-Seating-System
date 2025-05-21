@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import ManageHalls from './pages/admin/ManageHalls';
 import ManageScreens from './pages/admin/ManageScreens';
 import ManageShowtimes from './pages/admin/ManageShowtimes';
+import ManageMovies from './pages/admin/ManageMovies';
 import SelectMovie from './pages/booking/SelectMovie';
 import SelectScreen from './pages/booking/SelectScreen';
 import SelectSeats from './pages/booking/SelectSeats';
@@ -93,6 +94,7 @@ function App() {
                   <Route path="/movies" element={<AnimatedPage><Movies /></AnimatedPage>} />
                   <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
                   <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
+                  <Route path="/admin/login" element={<AnimatedPage><Login /></AnimatedPage>} />
                   
                   {/* Booking Flow - Allow both authenticated and guest users */}
                   <Route path="/booking" element={<AnimatedPage><Booking /></AnimatedPage>}>
@@ -104,10 +106,41 @@ function App() {
                   <Route path="/ticket/:bookingId" element={<AnimatedPage><Ticket /></AnimatedPage>} />
 
                   {/* Admin Routes - Protected for admin users only */}
-                  <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminDashboard /></ProtectedRoute>} />
-                  <Route path="/admin/halls" element={<ProtectedRoute requireAdmin={true}><ManageHalls /></ProtectedRoute>} />
-                  <Route path="/admin/screens" element={<ProtectedRoute requireAdmin={true}><ManageScreens /></ProtectedRoute>} />
-                  <Route path="/admin/showtimes" element={<ProtectedRoute requireAdmin={true}><ManageShowtimes /></ProtectedRoute>} />
+                  <Route path="/admin" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AnimatedPage>
+                        <AdminDashboard />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/movies" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AnimatedPage>
+                        <ManageMovies />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/halls" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AnimatedPage>
+                        <ManageHalls />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/screens" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AnimatedPage>
+                        <ManageScreens />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/showtimes" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AnimatedPage>
+                        <ManageShowtimes />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
 
                   {/* 404 Route */}
                   <Route path="*" element={<NotFound />} />

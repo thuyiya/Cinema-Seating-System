@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import passport from 'passport';
 import tmdbRoutes from './routes/tmdbRoutes';
 import authRoutes from './routes/authRoutes';
+import movieRoutes from './routes/movieRoutes';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ const startServer = async () => {
     // Mount routes
     apiRouter.use('/auth', authRoutes);
     apiRouter.use('/tmdb', tmdbRoutes);
+    apiRouter.use('/movies', movieRoutes);
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);

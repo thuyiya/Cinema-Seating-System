@@ -15,7 +15,7 @@ import {
 interface Movie {
   id: string;
   title: string;
-  posterUrl: string;
+  posterPath: string;
   duration: number;
   rating: number;
 }
@@ -62,7 +62,7 @@ export default function SelectMovie() {
                 <CardMedia
                   component="img"
                   height="300"
-                  image={movie.posterUrl}
+                  image={movie.posterPath}
                   alt={movie.title}
                 />
                 <CardContent>

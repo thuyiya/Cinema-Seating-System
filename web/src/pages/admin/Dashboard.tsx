@@ -11,8 +11,15 @@ import {
 import TheatersIcon from '@mui/icons-material/Theaters';
 import ScreenshotMonitorIcon from '@mui/icons-material/ScreenshotMonitor';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import MovieIcon from '@mui/icons-material/Movie';
 
 const adminFeatures = [
+  {
+    title: 'Manage Movies',
+    description: 'Add or remove movies from TMDB',
+    icon: MovieIcon,
+    path: '/admin/movies',
+  },
   {
     title: 'Manage Halls',
     description: 'Add, edit, or remove cinema halls',

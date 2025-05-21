@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 interface Movie {
   id: number;
   title: string;
-  posterUrl: string;
+  posterPath: string;
   releaseDate: string;
   rating: number;
   type: 'now_showing' | 'coming_soon';
@@ -26,7 +26,7 @@ const Movies = () => {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await fetch(`${apiBaseUrl}/movies`);
+        const response = await fetch(`${apiBaseUrl}/api/movies`);
         if (!response.ok) {
           throw new Error('Failed to fetch movies');
         }
@@ -82,7 +82,7 @@ const Movies = () => {
                   className="movie-card"
                 >
                   <img 
-                    src={movie.posterUrl} 
+                    src={movie.posterPath} 
                     alt={movie.title} 
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
@@ -109,7 +109,7 @@ const Movies = () => {
                   className="movie-card coming-soon"
                 >
                   <img 
-                    src={movie.posterUrl} 
+                    src={movie.posterPath} 
                     alt={movie.title}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';

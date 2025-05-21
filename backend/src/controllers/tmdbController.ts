@@ -15,6 +15,7 @@ export const getMovies = async (req: Request, res: Response) => {
     const nowShowing = nowPlaying.data.results.map((movie: any) => ({
       id: movie.id,
       title: movie.title,
+      overview: movie.overview,
       poster: `${TMDB_CONFIG.IMAGE_BASE_URL}${movie.poster_path}`,
       releaseDate: movie.release_date,
       rating: movie.vote_average,
@@ -24,6 +25,7 @@ export const getMovies = async (req: Request, res: Response) => {
     const comingSoon = upcoming.data.results.map((movie: any) => ({
       id: movie.id,
       title: movie.title,
+      overview: movie.overview,
       poster: `${TMDB_CONFIG.IMAGE_BASE_URL}${movie.poster_path}`,
       releaseDate: movie.release_date,
       rating: movie.vote_average,
