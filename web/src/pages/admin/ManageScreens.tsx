@@ -18,10 +18,14 @@ import {
   Box,
   CircularProgress,
   Alert,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ScreenForm from '../../components/ScreenForm';
+import SeatVisualizer from '../../components/SeatVisualizer';
+import SeatEditor from '../../components/SeatEditor';
 import type { IScreenFormData } from '../../components/ScreenForm';
 
 interface Screen {
@@ -101,6 +105,32 @@ const defaultFormData: IScreenFormData = {
   }
 };
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`screen-tabpanel-${index}`}
+      aria-labelledby={`screen-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
 export default function ManageScreens() {
   const [screens, setScreens] = useState<Screen[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +138,9 @@ export default function ManageScreens() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingScreen, setEditingScreen] = useState<Screen | null>(null);
   const [formData, setFormData] = useState<IScreenFormData>(defaultFormData);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedSeat, setSelectedSeat] = useState<{ section: number; seat: any } | null>(null);
+  const [openSeatEditor, setOpenSeatEditor] = useState(false);
 
   useEffect(() => {
     fetchScreens();
@@ -164,23 +197,73 @@ export default function ManageScreens() {
     setFormData(defaultFormData);
   };
 
-  const handleSubmit = async () => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setSelectedTab(newValue);
+  };
+
+  const handleSeatClick = (sectionIndex: number, seat: any) => {
+    setSelectedSeat({ section: sectionIndex, seat });
+    setOpenSeatEditor(true);
+  };
+
+  const handleSeatUpdate = (updatedSeat: any) => {
+    if (!editingScreen || selectedSeat === null) return;
+
+    const updatedScreen = { ...editingScreen };
+    const sectionIndex = selectedSeat.section;
+    const seatIndex = updatedScreen.sections[sectionIndex].seats.findIndex(
+      s => s.row === selectedSeat.seat.row && s.number === selectedSeat.seat.number
+    );
+
+    if (seatIndex !== -1) {
+      updatedScreen.sections[sectionIndex].seats[seatIndex] = updatedSeat;
+    } else {
+      updatedScreen.sections[sectionIndex].seats.push(updatedSeat);
+    }
+
+    // Convert the screen data to form data format
+    const updatedFormData: IScreenFormData = {
+      number: updatedScreen.number.toString(),
+      name: updatedScreen.name,
+      sections: updatedScreen.sections.map(section => ({
+        name: section.name,
+        rows: section.rows.toString(),
+        seatsPerRow: section.seatsPerRow.toString(),
+        startRow: section.startRow,
+        rowLabels: section.rowLabels,
+        seatLabels: section.seatLabels,
+        seats: section.seats
+      })),
+      layout: updatedScreen.layout,
+      seatingRules: updatedScreen.seatingRules
+    };
+
+    // Update the screen on the server
+    handleSubmit(updatedFormData);
+  };
+
+  const handleSubmit = async (screenData = formData) => {
     try {
       // Calculate total capacity from all sections
-      const totalCapacity = formData.sections.reduce((total, section) => {
-        return total + (parseInt(section.rows) * parseInt(section.seatsPerRow));
+      const totalCapacity = screenData.sections.reduce((total, section) => {
+        const availableSeats = section.seats?.filter(seat => seat.status === 'available').length || 0;
+        return total + (availableSeats || (parseInt(section.rows.toString()) * parseInt(section.seatsPerRow.toString())));
       }, 0);
 
-      const screenData = {
-        number: parseInt(formData.number),
-        name: formData.name,
-        sections: formData.sections.map(section => ({
-          ...section,
-          rows: parseInt(section.rows),
-          seatsPerRow: parseInt(section.seatsPerRow)
+      const submitData = {
+        number: parseInt(screenData.number),
+        name: screenData.name,
+        sections: screenData.sections.map(section => ({
+          name: section.name,
+          rows: parseInt(section.rows.toString()),
+          seatsPerRow: parseInt(section.seatsPerRow.toString()),
+          startRow: section.startRow,
+          rowLabels: section.rowLabels,
+          seatLabels: section.seatLabels,
+          seats: section.seats || []
         })),
-        layout: formData.layout,
-        seatingRules: formData.seatingRules,
+        layout: screenData.layout,
+        seatingRules: screenData.seatingRules,
         totalCapacity
       };
 
@@ -194,7 +277,7 @@ export default function ManageScreens() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(screenData),
+        body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
@@ -305,23 +388,54 @@ export default function ManageScreens() {
         </Table>
       </TableContainer>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog 
+        open={openDialog} 
+        onClose={handleCloseDialog} 
+        maxWidth="lg" 
+        fullWidth
+      >
         <DialogTitle>
           {editingScreen ? 'Edit Screen' : 'Add New Screen'}
         </DialogTitle>
         <DialogContent>
-          <ScreenForm
-            formData={formData}
-            onChange={setFormData}
-          />
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={selectedTab} onChange={handleTabChange}>
+              <Tab label="Basic Information" />
+              <Tab label="Seating Layout" disabled={!editingScreen} />
+            </Tabs>
+          </Box>
+          
+          <TabPanel value={selectedTab} index={0}>
+            <ScreenForm
+              formData={formData}
+              onChange={setFormData}
+            />
+          </TabPanel>
+          
+          <TabPanel value={selectedTab} index={1}>
+            {editingScreen && (
+              <SeatVisualizer
+                sections={editingScreen.sections}
+                layout={editingScreen.layout}
+                onSeatClick={handleSeatClick}
+              />
+            )}
+          </TabPanel>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <Button onClick={() => handleSubmit()} variant="contained" color="primary">
             {editingScreen ? 'Save Changes' : 'Create Screen'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <SeatEditor
+        open={openSeatEditor}
+        seat={selectedSeat?.seat || null}
+        onClose={() => setOpenSeatEditor(false)}
+        onSave={handleSeatUpdate}
+      />
     </Container>
   );
 } 
