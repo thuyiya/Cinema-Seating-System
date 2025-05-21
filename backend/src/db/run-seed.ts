@@ -1,9 +1,12 @@
 import { sequelize } from './config';
-import { up } from './seeders/seed-movies';
+import * as seedMovies from './seeders/seed-movies';
 
 (async () => {
   try {
-    await up(sequelize.getQueryInterface());
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
+    
+    await seedMovies.up(sequelize.getQueryInterface());
     console.log('✅ Database seeded successfully');
     process.exit(0);
   } catch (err) {

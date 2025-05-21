@@ -26,3 +26,16 @@ JWT_SECRET=your_jwt_secret
 ```
 
 Database Setup
+
+Start DB
+`npm run db:start`
+
+IF something wrong run
+# Rollback all migrations
+`npm run migrate:down`
+
+# Run migrations fresh
+`npm run migrate:up`
+
+# Now run the seed
+`npm run seed`

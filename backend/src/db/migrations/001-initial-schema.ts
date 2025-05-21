@@ -1,6 +1,8 @@
 import { QueryInterface, DataTypes } from 'sequelize';
 
 export async function up(queryInterface: QueryInterface) {
+  await queryInterface.sequelize.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+
   await queryInterface.createTable('Users', {
     id: {
       type: DataTypes.UUID,
@@ -36,7 +38,8 @@ export async function up(queryInterface: QueryInterface) {
   await queryInterface.createTable('Movies', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: DataTypes.UUIDV4, // This is crucial
+      allowNull: false,
       primaryKey: true,
     },
     title: {
@@ -247,4 +250,6 @@ export async function down(queryInterface: QueryInterface) {
   await queryInterface.dropTable('Screenings');
   await queryInterface.dropTable('Movies');
   await queryInterface.dropTable('Users');
+
+  await queryInterface.sequelize.query('DROP EXTENSION IF EXISTS "uuid-ossp"');
 }

@@ -3,34 +3,56 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import pool from './db';
+import { sequelize } from './db/config';
 import movieRoutes from './routes/movieRoutes';
+
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Wait for DB before starting server
-const startServer = async () => {
+// Database connection check
+const checkDatabase = async () => {
   try {
-    // Test DB connection
-    await pool.query('SELECT NOW()');
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
     
-    app.use(cors());
-    app.use(express.json());
+    // Sync models (optional - only if using Sequelize models)
+    // await sequelize.sync({ alter: true });
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    return false;
+  }
+};
 
-    app.get('/health', (req, res) => {
-      res.json({ status: 'OK', db: 'connected' });
-    })
-
-    app.get('/movies', movieRoutes);
-
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
+// Start server
+const startServer = async () => {
+  const dbConnected = await checkDatabase();
+  if (!dbConnected) {
+    console.error('❌ Exiting due to database connection failure');
     process.exit(1);
   }
+
+  app.use(cors());
+  app.use(express.json());
+
+  // Routes
+  app.use('/api', movieRoutes);
+
+  // Health check
+  app.get('/health', (req, res) => {
+    res.json({ 
+      status: 'OK', 
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 };
 
 startServer();
