@@ -45,9 +45,9 @@ interface Screen {
 }
 
 interface Price {
-  standard: number;
-  vip: number;
-  accessible: number;
+  REGULAR: number;
+  VIP: number;
+  ACCESSIBLE: number;
 }
 
 interface AvailableSeats {
@@ -76,9 +76,9 @@ interface FormData {
   startsAt: Date;
   endsAt: Date;
   price: {
-    standard: number;
-    vip: number;
-    accessible: number;
+    REGULAR: number;
+    VIP: number;
+    ACCESSIBLE: number;
   };
 }
 
@@ -96,9 +96,9 @@ export default function ManageShowtimes() {
     startsAt: new Date(),
     endsAt: new Date(Date.now() + (2 * 60 * 60 * 1000)),
     price: {
-      standard: 10,
-      vip: 15,
-      accessible: 8
+      REGULAR: 10,
+      VIP: 15,
+      ACCESSIBLE: 8
     }
   });
 
@@ -181,9 +181,9 @@ export default function ManageShowtimes() {
         startsAt: new Date(showtime.date),
         endsAt: new Date(showtime.endTime),
         price: {
-          standard: showtime.price.standard,
-          vip: showtime.price.vip,
-          accessible: showtime.price.accessible
+          REGULAR: showtime.price.REGULAR,
+          VIP: showtime.price.VIP,
+          ACCESSIBLE: showtime.price.ACCESSIBLE
         }
       });
     } else {
@@ -196,9 +196,9 @@ export default function ManageShowtimes() {
         startsAt: now,
         endsAt: twoHoursLater,
         price: {
-          standard: 10,
-          vip: 15,
-          accessible: 8
+          REGULAR: 10,
+          VIP: 15,
+          ACCESSIBLE: 8
         }
       });
     }
@@ -214,9 +214,9 @@ export default function ManageShowtimes() {
       startsAt: new Date(),
       endsAt: new Date(Date.now() + (2 * 60 * 60 * 1000)),
       price: {
-        standard: 10,
-        vip: 15,
-        accessible: 8
+        REGULAR: 10,
+        VIP: 15,
+        ACCESSIBLE: 8
       }
     });
   };
@@ -405,13 +405,13 @@ export default function ManageShowtimes() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" component="div">
-                      Standard: ${showtime.price.standard}
+                      Regular: ${showtime.price.REGULAR}
                     </Typography>
                     <Typography variant="body2" component="div">
-                      VIP: ${showtime.price.vip}
+                      VIP: ${showtime.price.VIP}
                     </Typography>
                     <Typography variant="body2" component="div">
-                      Accessible: ${showtime.price.accessible}
+                      Accessible: ${showtime.price.ACCESSIBLE}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -508,12 +508,12 @@ export default function ManageShowtimes() {
               <Grid item xs={4}>
                 <TextField
                   fullWidth
-                  label="Standard Price"
+                  label="Regular Price"
                   type="number"
-                  value={formData.price.standard}
+                  value={formData.price.REGULAR}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    price: { ...prev.price, standard: Number(e.target.value) }
+                    price: { ...prev.price, REGULAR: Number(e.target.value) }
                   }))}
                   InputProps={{ inputProps: { min: 0 } }}
                 />
@@ -523,10 +523,10 @@ export default function ManageShowtimes() {
                   fullWidth
                   label="VIP Price"
                   type="number"
-                  value={formData.price.vip}
+                  value={formData.price.VIP}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    price: { ...prev.price, vip: Number(e.target.value) }
+                    price: { ...prev.price, VIP: Number(e.target.value) }
                   }))}
                   InputProps={{ inputProps: { min: 0 } }}
                 />
@@ -536,10 +536,10 @@ export default function ManageShowtimes() {
                   fullWidth
                   label="Accessible Price"
                   type="number"
-                  value={formData.price.accessible}
+                  value={formData.price.ACCESSIBLE}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    price: { ...prev.price, accessible: Number(e.target.value) }
+                    price: { ...prev.price, ACCESSIBLE: Number(e.target.value) }
                   }))}
                   InputProps={{ inputProps: { min: 0 } }}
                 />
