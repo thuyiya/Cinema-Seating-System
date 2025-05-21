@@ -5,8 +5,8 @@ dotenv.config();
 
 import { sequelize } from './db/config';
 import movieRoutes from './routes/movieRoutes';
-
-
+import screeningRoutes from './routes/screeningRoutes';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,7 +18,7 @@ const checkDatabase = async () => {
     console.log('✅ Database connection established');
     
     // Sync models (optional - only if using Sequelize models)
-    // await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: true });
     
     return true;
   } catch (error) {
@@ -39,7 +39,9 @@ const startServer = async () => {
   app.use(express.json());
 
   // Routes
+  app.use('/api/auth', authRoutes);
   app.use('/api', movieRoutes);
+  app.use('/api', screeningRoutes);
 
   // Health check
   app.get('/health', (req, res) => {

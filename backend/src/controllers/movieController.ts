@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { sequelize } from '../db/config';
-import { Movie } from '../models/Movie';
+import { Movie } from '../models/movie';
 import { Screening } from '../models/Screening';
 import { v4 as uuidv4 } from 'uuid';
 import { validationResult } from 'express-validator';
@@ -39,7 +40,7 @@ export const getMovieById = async (req: Request, res: Response) => {
       include: [{
         model: Screening,
         as: 'screenings',
-        where: { startsAt: { [sequelize.Op.gt]: new Date() } },
+        where: { startsAt: { [Op.gt]: new Date() } },
         required: false
       }]
     });
@@ -125,7 +126,7 @@ export const deleteMovieById = async (req: Request, res: Response) => {
     const upcomingScreenings = await Screening.count({
       where: {
         movieId: id,
-        startsAt: { [sequelize.Op.gt]: new Date() }
+        startsAt: { [Op.gt]: new Date() }
       }
     });
 

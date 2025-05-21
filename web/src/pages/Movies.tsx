@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Movies.css';
+import { useAuth } from '../context/AuthContext';
 
 interface Movie {
   id: number;
   title: string;
-  poster: string;
+  posterUrl: string;
   releaseDate: string;
   rating: number;
   type: 'now_showing' | 'coming_soon';
@@ -85,7 +86,7 @@ const Movies = () => {
                   className="movie-card"
                 >
                   <img 
-                    src={movie.poster} 
+                    src={movie.posterUrl} 
                     alt={movie.title} 
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
@@ -112,7 +113,7 @@ const Movies = () => {
                   className="movie-card coming-soon"
                 >
                   <img 
-                    src={movie.poster} 
+                    src={movie.posterUrl} 
                     alt={movie.title}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
@@ -137,6 +138,7 @@ const Movies = () => {
 
 const NavBar = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
   
   return (
     <nav className="navbar">
@@ -145,7 +147,20 @@ const NavBar = () => {
         <div className="nav-links">
           <button onClick={() => navigate('/')}>Home</button>
           <button onClick={() => navigate('/booking')}>Book Tickets</button>
-          <button onClick={() => navigate('/about')}>About</button>
+          {isAuthenticated ? (
+            <>
+              <button onClick={() => navigate('/admin/dashboard')}>Admin Dashboard</button>
+              <button onClick={() => {
+                logout();
+                navigate('/');
+              }}>Logout</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => navigate('/admin/login')}>Login</button>
+              <button onClick={() => navigate('/admin/register')}>Register</button>
+            </>
+          )}
         </div>
       </div>
     </nav>
