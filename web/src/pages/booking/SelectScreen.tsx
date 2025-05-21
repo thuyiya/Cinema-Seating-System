@@ -33,7 +33,7 @@ export default function SelectScreen() {
   useEffect(() => {
     const fetchScreenings = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/movies/${movieId}/screenings`);
+        const response = await fetch(`http://localhost:3001/api/movies/${movieId}/screens`);
         if (!response.ok) {
           throw new Error('Failed to fetch screenings');
         }

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, Box } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -12,9 +12,9 @@ import Payment from './pages/Payment';
 import Ticket from './pages/Ticket';
 import NotFound from './pages/NotFound';
 import './App.css'
-import { AuthWrapper } from './routes/AuthWrapper';
 import { AnimatedPage } from './utils/AnimatedPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageScreens from './pages/admin/ManageScreens';
 import ManageShowtimes from './pages/admin/ManageShowtimes';
@@ -90,45 +90,47 @@ function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Movies />} />
-                  <Route path="/auth/login" element={<Login />} />
-                  <Route path="/auth/register" element={<Register />} />
-                  <Route path="/admin/login" element={<Login />} />
+                  <Route path="/auth/login" element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  } />
+                  <Route path="/auth/register" element={
+                    <PublicRoute>
+                      <Register />
+                    </PublicRoute>
+                  } />
+                  <Route path="/admin/login" element={
+                    <PublicRoute redirectTo="/admin">
+                      <Login />
+                    </PublicRoute>
+                  } />
 
-                  {/* Protected Routes */}
+                  {/* Booking Routes - No login required */}
                   <Route path="/booking" element={
-                    <ProtectedRoute>
-                      <AnimatedPage>
-                        <SelectMovie />
-                      </AnimatedPage>
-                    </ProtectedRoute>
+                    <AnimatedPage>
+                      <SelectMovie />
+                    </AnimatedPage>
                   } />
                   <Route path="/booking/:movieId" element={
-                    <ProtectedRoute>
-                      <AnimatedPage>
-                        <SelectScreen />
-                      </AnimatedPage>
-                    </ProtectedRoute>
+                    <AnimatedPage>
+                      <SelectScreen />
+                    </AnimatedPage>
                   } />
                   <Route path="/booking/:movieId/:screeningId" element={
-                    <ProtectedRoute>
-                      <AnimatedPage>
-                        <SelectSeats />
-                      </AnimatedPage>
-                    </ProtectedRoute>
+                    <AnimatedPage>
+                      <SelectSeats />
+                    </AnimatedPage>
                   } />
                   <Route path="/payment/:bookingId" element={
-                    <ProtectedRoute>
-                      <AnimatedPage>
-                        <Payment />
-                      </AnimatedPage>
-                    </ProtectedRoute>
+                    <AnimatedPage>
+                      <Payment />
+                    </AnimatedPage>
                   } />
                   <Route path="/ticket/:bookingId" element={
-                    <ProtectedRoute>
-                      <AnimatedPage>
-                        <Ticket />
-                      </AnimatedPage>
-                    </ProtectedRoute>
+                    <AnimatedPage>
+                      <Ticket />
+                    </AnimatedPage>
                   } />
 
                   {/* Admin Routes */}

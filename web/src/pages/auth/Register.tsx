@@ -1,241 +1,167 @@
-import { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import React, { useState } from 'react';
 import {
   Container,
-  Box,
+  Paper,
   Typography,
   TextField,
   Button,
-  Link,
+  Box,
   Alert,
-  Paper,
-  useTheme,
-  Divider
+  Link as MuiLink
 } from '@mui/material';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-
-const validationSchema = Yup.object({
-  name: Yup.string()
-    .required('Name is required')
-    .min(2, 'Name must be at least 2 characters'),
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-  mobile: Yup.string()
-    .matches(/^[0-9]{10}$/, 'Mobile number must be 10 digits')
-    .required('Mobile number is required'),
-  password: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password')], 'Passwords must match')
-    .required('Confirm password is required'),
-});
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Register() {
-  const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const theme = useTheme();
-
-  const formik = useFormik({
-    initialValues: {
-      name: '',
-      email: '',
-      mobile: '',
-      password: '',
-      confirmPassword: '',
-    },
-    validationSchema,
-    onSubmit: async (values) => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: values.name,
-            email: values.email,
-            mobile: values.mobile,
-            password: values.password,
-          }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || 'Registration failed');
-        }
-
-        // Registration successful
-        navigate('/login', { state: { message: 'Registration successful. Please login.' } });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      }
-    },
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      // Auto-login after successful registration
+      login(data.token, data.user);
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          py: 4,
-        }}
-      >
-        <Paper
-          elevation={6}
-          sx={{
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-            background: theme.palette.background.paper,
-            borderRadius: 2,
-          }}
-        >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              backgroundColor: theme.palette.primary.main,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2,
-            }}
-          >
-            <PersonAddOutlinedIcon />
-          </Box>
-
-          <Typography component="h1" variant="h5" gutterBottom>
-            Create Account
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom align="center">
+            Register
           </Typography>
 
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mt: 2, 
-                width: '100%',
-                borderRadius: 1
-              }}
-            >
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
 
-          <Box 
-            component="form" 
-            onSubmit={formik.handleSubmit} 
-            sx={{ 
-              mt: 3, 
-              width: '100%' 
-            }}
-          >
+          <form onSubmit={handleSubmit}>
             <TextField
-              margin="normal"
-              fullWidth
-              id="name"
-              label="Full Name"
+              label="Name"
               name="name"
+              fullWidth
+              margin="normal"
+              value={formData.name}
+              onChange={handleChange}
+              required
               autoComplete="name"
-              autoFocus
-              value={formik.values.name}
-              onChange={formik.handleChange}
-              error={formik.touched.name && Boolean(formik.errors.name)}
-              helperText={formik.touched.name && formik.errors.name}
-              sx={{ mb: 2 }}
             />
+
             <TextField
-              margin="normal"
-              fullWidth
-              id="email"
-              label="Email Address"
+              label="Email"
               name="email"
+              type="email"
+              fullWidth
+              margin="normal"
+              value={formData.email}
+              onChange={handleChange}
+              required
               autoComplete="email"
-              value={formik.values.email}
-              onChange={formik.handleChange}
-              error={formik.touched.email && Boolean(formik.errors.email)}
-              helperText={formik.touched.email && formik.errors.email}
-              sx={{ mb: 2 }}
             />
+
             <TextField
-              margin="normal"
-              fullWidth
-              id="mobile"
-              label="Mobile Number"
-              name="mobile"
-              autoComplete="tel"
-              value={formik.values.mobile}
-              onChange={formik.handleChange}
-              error={formik.touched.mobile && Boolean(formik.errors.mobile)}
-              helperText={formik.touched.mobile && formik.errors.mobile}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              name="password"
               label="Password"
+              name="password"
               type="password"
-              id="password"
-              autoComplete="new-password"
-              value={formik.values.password}
-              onChange={formik.handleChange}
-              error={formik.touched.password && Boolean(formik.errors.password)}
-              helperText={formik.touched.password && formik.errors.password}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              margin="normal"
               fullWidth
-              name="confirmPassword"
-              label="Confirm Password"
-              type="password"
-              id="confirmPassword"
+              margin="normal"
+              value={formData.password}
+              onChange={handleChange}
+              required
               autoComplete="new-password"
-              value={formik.values.confirmPassword}
-              onChange={formik.handleChange}
-              error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
-              helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
-              sx={{ mb: 3 }}
             />
+
+            <TextField
+              label="Confirm Password"
+              name="confirmPassword"
+              type="password"
+              fullWidth
+              margin="normal"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+            />
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 1, mb: 2 }}
+              size="large"
+              sx={{ mt: 3 }}
+              disabled={loading}
             >
-              Sign Up
+              {loading ? 'Registering...' : 'Register'}
             </Button>
 
-            <Divider sx={{ my: 2 }}>or</Divider>
-
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="body2">
                 Already have an account?{' '}
-                <Link component={RouterLink} to="/login" variant="body2">
-                  Sign in
-                </Link>
+                <MuiLink component={Link} to="/login">
+                  Login here
+                </MuiLink>
               </Typography>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{ mt: 2 }}
-                onClick={() => navigate('/booking')}
-              >
-                Continue as Guest
-              </Button>
             </Box>
-          </Box>
+          </form>
         </Paper>
       </Box>
     </Container>

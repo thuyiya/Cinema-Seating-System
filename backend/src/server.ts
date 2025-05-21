@@ -10,6 +10,7 @@ import tmdbRoutes from './routes/tmdbRoutes';
 import authRoutes from './routes/authRoutes';
 import movieRoutes from './routes/movieRoutes';
 import screenRoutes from './routes/screenRoutes';
+import showtimeRoutes from './routes/showtimeRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,7 +49,7 @@ const startServer = async () => {
     apiRouter.use('/tmdb', tmdbRoutes);
     apiRouter.use('/movies', movieRoutes);
     apiRouter.use('/screens', screenRoutes);
-
+    apiRouter.use('/showtimes', showtimeRoutes);
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });

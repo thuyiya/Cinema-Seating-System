@@ -4,13 +4,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export class BookingService {
   static async findSeatsForGroup(groupSize: number, screeningId: string): Promise<Seat[]> {
-    const response = await fetch(`${API_BASE_URL}/api/screenings/${screeningId}/seats/group?size=${groupSize}`);
+    const response = await fetch(`${API_BASE_URL}/api/screens/${screeningId}/seats/group?size=${groupSize}`);
     if (!response.ok) throw new Error('Failed to find seats');
     return response.json();
   }
 
   static async getSeatingMap(screeningId: string): Promise<SeatingMap> {
-    const response = await fetch(`${API_BASE_URL}/api/screenings/${screeningId}/seats`);
+    const response = await fetch(`${API_BASE_URL}/api/screens/${screeningId}/seats`);
     if (!response.ok) throw new Error('Failed to get seating map');
     return response.json();
   }
@@ -100,7 +100,7 @@ export class BookingService {
   }
 
   static async getScreenings(movieId: string) {
-    const response = await fetch(`${API_BASE_URL}/api/movies/${movieId}/screenings`);
+    const response = await fetch(`${API_BASE_URL}/api/movies/${movieId}/screens`);
     if (!response.ok) throw new Error('Failed to get screenings');
     return response.json();
   }

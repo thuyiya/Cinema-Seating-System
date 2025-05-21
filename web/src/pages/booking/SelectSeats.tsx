@@ -39,7 +39,7 @@ export default function SelectSeats() {
   useEffect(() => {
     const fetchScreeningDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/screenings/${screenId}`);
+        const response = await fetch(`http://localhost:3001/api/screens/${screenId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch screening details');
         }

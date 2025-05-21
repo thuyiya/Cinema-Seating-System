@@ -1,63 +1,56 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  role: 'admin' | 'user';
-  name: string;
-}
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
-  login: (token: string, userData: User) => void;
+  isAdmin: boolean;
+  token: string | null;
+  user: any | null;
+  login: (token: string, user: any) => void;
   logout: () => void;
-  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {
-    // Check for existing auth on mount
-    const token = localStorage.getItem('token');
+    // Check for saved auth state on component mount
+    const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    if (token && savedUser) {
-      try {
-        const userData = JSON.parse(savedUser) as User;
-        setIsAuthenticated(true);
-        setUser(userData);
-      } catch (error) {
-        console.error('Error parsing saved user data:', error);
-        logout();
-      }
+
+    if (savedToken && savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setToken(savedToken);
+      setUser(parsedUser);
+      setIsAuthenticated(true);
+      setIsAdmin(parsedUser.role === 'admin');
     }
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
+  const login = (newToken: string, userData: any) => {
+    localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    setIsAuthenticated(true);
+    setToken(newToken);
     setUser(userData);
+    setIsAuthenticated(true);
+    setIsAdmin(userData.role === 'admin');
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setIsAuthenticated(false);
+    setToken(null);
     setUser(null);
-  };
-
-  const isAdmin = () => {
-    return user?.role === 'admin';
+    setIsAuthenticated(false);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, token, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

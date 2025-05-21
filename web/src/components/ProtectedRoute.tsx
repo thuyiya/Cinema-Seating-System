@@ -6,15 +6,14 @@ interface ProtectedRouteProps {
   requireAdmin?: boolean;
 }
 
-export default function ProtectedRoute({ children, requireAdmin = true }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
   const { isAuthenticated, isAdmin } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" />;
+    return <Navigate to={requireAdmin ? "/admin/login" : "/"} />;
   }
 
-  if (requireAdmin && !isAdmin()) {
-    // Redirect non-admin users to home page
+  if (requireAdmin && !isAdmin) {
     return <Navigate to="/" />;
   }
 

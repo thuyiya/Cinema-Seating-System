@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import React, { useState } from 'react';
 import {
   Container,
   Paper,
@@ -8,30 +7,29 @@ import {
   Button,
   Box,
   Alert,
-  Link,
-  Divider,
+  Link as MuiLink
 } from '@mui/material';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-
 export default function Login() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || '/';
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
     setLoading(true);
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,46 +40,24 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || 'Failed to login');
       }
 
       login(data.token, data.user);
-
-      // Redirect based on user role
-      if (data.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            p: 4, 
-            width: '100%',
-            borderRadius: 2,
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Sign in
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 8, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom align="center">
+            Login
           </Typography>
 
           {error && (
@@ -90,56 +66,49 @@ export default function Login() {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit} noValidate>
+          <form onSubmit={handleSubmit}>
             <TextField
-              margin="normal"
-              required
+              label="Email"
+              type="email"
               fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
+              margin="normal"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               autoComplete="email"
-              autoFocus
             />
+
             <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
               label="Password"
               type="password"
-              id="password"
+              fullWidth
+              margin="normal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               autoComplete="current-password"
             />
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              size="large"
+              sx={{ mt: 3 }}
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Logging in...' : 'Login'}
             </Button>
 
-            <Divider sx={{ my: 2 }}>or</Divider>
-
             <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
+              <Typography variant="body2">
                 Don't have an account?{' '}
-                <Link component={RouterLink} to="/register" variant="body2">
-                  Sign up
-                </Link>
+                <MuiLink component={Link} to="/register">
+                  Register here
+                </MuiLink>
               </Typography>
-              <Button
-                fullWidth
-                variant="outlined"
-                sx={{ mt: 1 }}
-                onClick={() => navigate('/booking')}
-              >
-                Continue as Guest
-              </Button>
             </Box>
-          </Box>
+          </form>
         </Paper>
       </Box>
     </Container>

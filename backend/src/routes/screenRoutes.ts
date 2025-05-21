@@ -10,14 +10,11 @@ import { authenticateJWT } from '../middleware/auth';
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authenticateJWT);
-
 // Screen routes
-router.post('/', createScreen);
+router.post('/', authenticateJWT, createScreen);
 router.get('/', getScreens);
-router.get('/:id', getScreenById);
-router.put('/:id', updateScreen);
-router.delete('/:id', deleteScreen);
+router.get('/:id',  getScreenById);
+router.put('/:id', authenticateJWT, updateScreen);
+router.delete('/:id', authenticateJWT, deleteScreen);
 
 export default router; 
