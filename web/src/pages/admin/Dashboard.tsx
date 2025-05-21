@@ -21,12 +21,6 @@ const adminFeatures = [
     path: '/admin/movies',
   },
   {
-    title: 'Manage Halls',
-    description: 'Add, edit, or remove cinema halls',
-    icon: TheatersIcon,
-    path: '/admin/halls',
-  },
-  {
     title: 'Manage Screens',
     description: 'Configure screens and seating layouts',
     icon: ScreenshotMonitorIcon,

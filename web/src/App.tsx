@@ -16,7 +16,6 @@ import { AuthWrapper } from './routes/AuthWrapper';
 import { AnimatedPage } from './utils/AnimatedPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/admin/Dashboard';
-import ManageHalls from './pages/admin/ManageHalls';
 import ManageScreens from './pages/admin/ManageScreens';
 import ManageShowtimes from './pages/admin/ManageShowtimes';
 import ManageMovies from './pages/admin/ManageMovies';
@@ -81,31 +80,58 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <AuthProvider>
           <Router>
-            <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+              <CssBaseline />
               <Navbar />
-              <Box component="main" sx={{ flex: 1, p: 2 }}>
+              <Box component="main" sx={{ flexGrow: 1 }}>
                 <Routes>
                   {/* Public Routes */}
-                  <Route path="/" element={<AnimatedPage><Movies /></AnimatedPage>} />
-                  <Route path="/movies" element={<AnimatedPage><Movies /></AnimatedPage>} />
-                  <Route path="/login" element={<AnimatedPage><Login /></AnimatedPage>} />
-                  <Route path="/register" element={<AnimatedPage><Register /></AnimatedPage>} />
-                  <Route path="/admin/login" element={<AnimatedPage><Login /></AnimatedPage>} />
-                  
-                  {/* Booking Flow - Allow both authenticated and guest users */}
-                  <Route path="/booking" element={<AnimatedPage><Booking /></AnimatedPage>}>
-                    <Route index element={<SelectMovie />} />
-                    <Route path=":movieId" element={<SelectScreen />} />
-                    <Route path=":movieId/screen/:screenId" element={<SelectSeats />} />
-                  </Route>
-                  <Route path="/payment" element={<AnimatedPage><Payment /></AnimatedPage>} />
-                  <Route path="/ticket/:bookingId" element={<AnimatedPage><Ticket /></AnimatedPage>} />
+                  <Route path="/" element={<Movies />} />
+                  <Route path="/auth/login" element={<Login />} />
+                  <Route path="/auth/register" element={<Register />} />
+                  <Route path="/admin/login" element={<Login isAdmin={true} />} />
 
-                  {/* Admin Routes - Protected for admin users only */}
+                  {/* Protected Routes */}
+                  <Route path="/booking" element={
+                    <ProtectedRoute>
+                      <AnimatedPage>
+                        <SelectMovie />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/booking/:movieId" element={
+                    <ProtectedRoute>
+                      <AnimatedPage>
+                        <SelectScreen />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/booking/:movieId/:screeningId" element={
+                    <ProtectedRoute>
+                      <AnimatedPage>
+                        <SelectSeats />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/payment/:bookingId" element={
+                    <ProtectedRoute>
+                      <AnimatedPage>
+                        <Payment />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ticket/:bookingId" element={
+                    <ProtectedRoute>
+                      <AnimatedPage>
+                        <Ticket />
+                      </AnimatedPage>
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Admin Routes */}
                   <Route path="/admin" element={
                     <ProtectedRoute requireAdmin={true}>
                       <AnimatedPage>
@@ -117,13 +143,6 @@ function App() {
                     <ProtectedRoute requireAdmin={true}>
                       <AnimatedPage>
                         <ManageMovies />
-                      </AnimatedPage>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin/halls" element={
-                    <ProtectedRoute requireAdmin={true}>
-                      <AnimatedPage>
-                        <ManageHalls />
                       </AnimatedPage>
                     </ProtectedRoute>
                   } />
