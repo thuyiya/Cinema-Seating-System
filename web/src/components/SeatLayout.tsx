@@ -232,7 +232,20 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
                         return (
                           <React.Fragment key={seat.id}>
                             {isAisle && <Box sx={{ width: 20 }} />}
-                            <Tooltip title={`${seatLabel} - ${seat.type}${seat.status ? ` (${seat.status})` : ''}`}>
+                            <Tooltip 
+                              title={`${seatLabel} - ${seat.type}${seat.status ? ` (${seat.status})` : ''}`}
+                              componentsProps={{
+                                tooltip: {
+                                  sx: {
+                                    bgcolor: '#000000',
+                                    color: 'white',
+                                    '& .MuiTooltip-arrow': {
+                                      color: '#000000'
+                                    }
+                                  }
+                                }
+                              }}
+                            >
                               <StyledSeat
                                 className={`${getSeatClass(seat)}${isAdminView ? ' admin' : ''}`}
                                 onClick={() => !isDisabled && onSeatClick(seat.id, seat)}
