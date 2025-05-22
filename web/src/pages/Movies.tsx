@@ -3,11 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import './Movies.css';
 import type { Movie } from '../types/movie';
 
+const NoResults = () => (
+  <div className="no-results">
+    <svg 
+      className="no-results-icon" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9 9l6 6" />
+      <path d="M15 9l-6 6" />
+    </svg>
+    <p>No movies found</p>
+    <p className="no-results-subtitle">Try adjusting your search</p>
+  </div>
+);
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const Movies = () => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
   const [movies, setMovies] = useState<{
     nowShowing: Movie[];
     comingSoon: Movie[];
@@ -33,6 +51,15 @@ const Movies = () => {
 
     fetchMovies();
   }, []);
+
+  const filteredMovies = {
+    nowShowing: movies.nowShowing.filter(movie =>
+      movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    comingSoon: movies.comingSoon.filter(movie =>
+      movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+  };
 
   if (loading) {
     return (
@@ -63,30 +90,43 @@ const Movies = () => {
   return (
     <div className="app-container">
       <main className="main-content">
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search movies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
         <section className="movie-section">
           <h2 className="section-title">Now Showing</h2>
           <div className="horizontal-scroll">
             <div className="movie-row">
-              {movies.nowShowing.map(movie => (
-                <div
-                  key={movie._id}
-                  onClick={() => navigate(`/booking/${movie._id}`)}
-                  className="movie-card"
-                >
-                  <img 
-                    src={movie.posterPath} 
-                    alt={movie.title} 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
-                    }}
-                  />
-                  <div className="movie-info">
-                    <h3>{movie.title}</h3>
-                    <div className="rating-badge">{movie.rating.toFixed(1)}</div>
-                    <p>{new Date(movie.releaseDate).toLocaleDateString()}</p>
+              {filteredMovies.nowShowing.length > 0 ? (
+                filteredMovies.nowShowing.map(movie => (
+                  <div
+                    key={movie._id}
+                    onClick={() => navigate(`/booking/${movie._id}`)}
+                    className="movie-card"
+                  >
+                    <img 
+                      src={movie.posterPath} 
+                      alt={movie.title} 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
+                      }}
+                    />
+                    <div className="movie-info">
+                      <h3>{movie.title}</h3>
+                      <div className="rating-badge">{movie.rating.toFixed(1)}</div>
+                      <p>{new Date(movie.releaseDate).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <NoResults />
+              )}
             </div>
           </div>
         </section>
@@ -95,25 +135,29 @@ const Movies = () => {
           <h2 className="section-title">Coming Soon</h2>
           <div className="horizontal-scroll">
             <div className="movie-row">
-              {movies.comingSoon.map(movie => (
-                <div
-                  key={movie._id}
-                  className="movie-card coming-soon"
-                >
-                  <img 
-                    src={movie.posterPath} 
-                    alt={movie.title}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
-                    }}
-                  />
-                  <div className="movie-info">
-                    <h3>{movie.title}</h3>
-                    <div className="coming-soon-badge">Coming Soon</div>
-                    <p>{new Date(movie.releaseDate).toLocaleDateString()}</p>
+              {filteredMovies.comingSoon.length > 0 ? (
+                filteredMovies.comingSoon.map(movie => (
+                  <div
+                    key={movie._id}
+                    className="movie-card coming-soon"
+                  >
+                    <img 
+                      src={movie.posterPath} 
+                      alt={movie.title}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-movie.jpg';
+                      }}
+                    />
+                    <div className="movie-info">
+                      <h3>{movie.title}</h3>
+                      <div className="coming-soon-badge">Coming Soon</div>
+                      <p>{new Date(movie.releaseDate).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <NoResults />
+              )}
             </div>
           </div>
         </section>
