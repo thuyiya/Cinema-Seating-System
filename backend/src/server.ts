@@ -12,6 +12,7 @@ import movieRoutes from './routes/movieRoutes';
 import screenRoutes from './routes/screenRoutes';
 import showtimeRoutes from './routes/showtimeRoutes';
 import bookingRoutes from './routes/bookingRoutes';
+import { startBookingCleanupJob } from './jobs/bookingCleanup';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,10 @@ const startServer = async () => {
     // Connect to MongoDB
     await mongoose.connect(mongoUri);
     console.log('📦 Connected to MongoDB');
+
+    // Start the booking cleanup job
+    startBookingCleanupJob();
+    console.log('🧹 Started booking cleanup job');
 
     // Middleware
     app.use(cors());

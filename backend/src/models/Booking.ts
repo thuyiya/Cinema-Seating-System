@@ -18,6 +18,8 @@ export interface IBooking extends Document {
   updatedAt: Date;
 }
 
+const BOOKING_EXPIRY_MINUTES = 10;
+
 const bookingSchema = new Schema<IBooking>({
   userId: {
     type: Schema.Types.ObjectId,
@@ -84,7 +86,7 @@ bookingSchema.index({ showtimeId: 1, 'seats.seatId': 1, status: 1 });
 // Middleware to set expiration for temporary bookings
 bookingSchema.pre('save', function(next) {
   if (this.isNew && this.status === 'temporary' && !this.expiresAt) {
-    this.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    this.expiresAt = new Date(Date.now() + BOOKING_EXPIRY_MINUTES * 60 * 1000);
   }
   next();
 });
@@ -108,6 +110,52 @@ bookingSchema.statics.checkSeatConflicts = async function(
   });
   
   return conflicts.length > 0;
+};
+
+// Static method to cleanup expired bookings
+bookingSchema.statics.cleanupExpiredBookings = async function() {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Find all expired temporary bookings
+    const expiredBookings = await this.find({
+      status: 'temporary',
+      expiresAt: { $lte: new Date() }
+    }).session(session);
+
+    // Update their status to cancelled
+    await this.updateMany(
+      {
+        status: 'temporary',
+        expiresAt: { $lte: new Date() }
+      },
+      {
+        $set: { status: 'cancelled', paymentStatus: 'failed' }
+      }
+    ).session(session);
+
+    // Remove the seats from corresponding showtimes
+    for (const booking of expiredBookings) {
+      const showtime = await mongoose.model('Showtime').findById(booking.showtimeId).session(session);
+      if (showtime) {
+        showtime.bookedSeats = showtime.bookedSeats.filter(
+          (seat: { seatId: mongoose.Types.ObjectId }) => 
+            !booking.seats.find((bs: { seatId: mongoose.Types.ObjectId }) => 
+              bs.seatId.toString() === seat.seatId.toString()
+            )
+        );
+        await showtime.save();
+      }
+    }
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Error cleaning up expired bookings:', error);
+  } finally {
+    session.endSession();
+  }
 };
 
 // Method to generate ticket number

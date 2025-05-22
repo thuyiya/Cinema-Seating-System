@@ -146,7 +146,7 @@ export default function SelectSeats() {
       });
 
       // Navigate to payment with booking details
-      navigate('/payment', {
+      navigate(`/payment/${bookingResponse.bookingId}`, {
         state: {
           movieId,
           showtimesId,
