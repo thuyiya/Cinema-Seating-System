@@ -116,9 +116,30 @@ export default function SelectSeats() {
     setError(null);
 
     try {
+      // Convert selected seat IDs to the format expected by the backend
+      const formattedSeats = selectedSeats.map(seatId => {
+        const seat = sections.flatMap(s => s.seats).find(s => s.id === seatId);
+        if (!seat) {
+          throw new Error(`Seat ${seatId} not found`);
+        }
+        
+        // Parse row letter and seat number from the seat ID
+        // Assuming seat ID format is like "A1", "B2", etc.
+        const row = seat.row;
+        const number = seat.number;
+
+        return {
+          seatId: seatId,
+          row: row,
+          number: number,
+          type: seat.type,
+          price: showtime.price[seat.type.toUpperCase() as keyof typeof showtime.price]
+        };
+      });
+
       const bookingResponse = await BookingService.createBooking({
         showtimeId: showtimesId!,
-        seats: selectedSeats,
+        seats: formattedSeats,
         guestInfo: guestInfo || undefined,
         groupSize: selectedSeats.length,
         totalAmount: calculateTotalPrice(),
@@ -135,7 +156,7 @@ export default function SelectSeats() {
           seats: selectedSeats,
           totalAmount: calculateTotalPrice(),
           bookingId: bookingResponse.bookingId,
-          guestInfo // Pass guest info to payment page
+          guestInfo
         }
       });
     } catch (err) {
@@ -144,6 +165,7 @@ export default function SelectSeats() {
         // Refresh the showtime data to get updated seat availability
         fetchShowtimeAndSeats();
       } else {
+        console.error('Booking error:', err);
         setError('Failed to create booking. Please try again.');
       }
       setBookingInProgress(false);

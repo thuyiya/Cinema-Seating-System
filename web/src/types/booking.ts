@@ -40,13 +40,18 @@ export interface SeatingMap {
 
 export interface BookingRequest {
   showtimeId: string;
-  seats: string[];
+  seats: {
+    seatId: string;
+    row: string;
+    number: number;
+    type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
+    price: number;
+  }[];
   guestInfo?: {
     name: string;
     email: string;
     mobile: string;
   };
-  requestType?: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
   groupSize: number;
   totalAmount: number;
 }
