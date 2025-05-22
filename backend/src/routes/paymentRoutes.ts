@@ -1,13 +1,12 @@
 import express from 'express';
 import { processPayment, getPaymentDetails } from '../controllers/paymentController';
-import { authenticateJWT } from '../middleware/auth';
 
 const router = express.Router();
 
-// Process payment for a booking
-router.post('/process', authenticateJWT, processPayment);
+// Process payment for a booking (no auth required)
+router.post('/process', processPayment);
 
-// Get payment details
-router.get('/:paymentId', authenticateJWT, getPaymentDetails);
+// Get payment details (no auth required)
+router.get('/:paymentId', getPaymentDetails);
 
 export default router; 

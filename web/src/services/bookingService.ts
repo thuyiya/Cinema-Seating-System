@@ -1,18 +1,17 @@
 import type { BookingRequest, BookingResponse, Seat, SeatingMap } from '../types/booking';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import api from './api';
 
 export class BookingService {
   static async findSeatsForGroup(groupSize: number, screeningId: string): Promise<Seat[]> {
-    const response = await fetch(`${API_BASE_URL}/api/screens/${screeningId}/seats/group?size=${groupSize}`);
-    if (!response.ok) throw new Error('Failed to find seats');
-    return response.json();
+    const response = await api.get<Seat[]>(`/screens/${screeningId}/seats/group`, {
+      params: { size: groupSize }
+    });
+    return response.data;
   }
 
   static async getSeatingMap(screeningId: string): Promise<SeatingMap> {
-    const response = await fetch(`${API_BASE_URL}/api/screens/${screeningId}/seats`);
-    if (!response.ok) throw new Error('Failed to get seating map');
-    return response.json();
+    const response = await api.get<SeatingMap>(`/screens/${screeningId}/seats`);
+    return response.data;
   }
 
   static wouldCreateSingleSeatGap(seatingMap: SeatingMap, selectedSeats: Seat[]): boolean {
@@ -54,66 +53,64 @@ export class BookingService {
   }
 
   static async getShowtime(showtimeId: string) {
-    const response = await fetch(`${API_BASE_URL}/api/showtimes/${showtimeId}`);
-    if (!response.ok) throw new Error('Failed to fetch showtime');
-    return response.json();
+    const response = await api.get(`/api/showtimes/${showtimeId}`);
+    return response.data;
   }
 
   static async getShowtimeSeats(showtimeId: string, screenId: string) {
-    const response = await fetch(`${API_BASE_URL}/api/showtimes/${showtimeId}/${screenId}/seats`);
-    if (!response.ok) throw new Error('Failed to fetch seats');
-    return response.json();
+    const response = await api.get(`/api/showtimes/${showtimeId}/${screenId}/seats`);
+    return response.data;
   }
 
   static async createBooking(bookingRequest: BookingRequest): Promise<BookingResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/bookings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(bookingRequest),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create booking');
-    }
-
-    return response.json();
+    const response = await api.post<BookingResponse>('/api/bookings', bookingRequest);
+    return response.data;
   }
 
-  static async processPayment(bookingId: string, paymentDetails: any): Promise<BookingResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/complete`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(paymentDetails),
+  static async processPayment(bookingId: string, cardDetails: {
+    number: string;
+    expiry: string;
+    cvv: string;
+  }): Promise<{
+    success: boolean;
+    booking: BookingResponse;
+    payment: {
+      transactionId: string;
+      amount: number;
+      status: string;
+    };
+  }> {
+    const response = await api.post<{
+      success: boolean;
+      booking: BookingResponse;
+      payment: {
+        transactionId: string;
+        amount: number;
+        status: string;
+      };
+    }>(`/api/bookings/${bookingId}/complete`, {
+      cardDetails
     });
+    return response.data;
+  }
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Payment failed');
-    }
-
-    return response.json();
+  static async getPaymentDetails(paymentId: string) {
+    const response = await api.get(`/payments/${paymentId}`);
+    return response.data;
   }
 
   static async getBookingDetails(bookingId: string): Promise<BookingResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}`);
-    if (!response.ok) throw new Error('Failed to get booking details');
-    return response.json();
+    const response = await api.get<BookingResponse>(`/api/bookings/${bookingId}`);
+    return response.data;
   }
 
   static async getCinemaHalls() {
-    const response = await fetch(`${API_BASE_URL}/api/cinemas`);
-    if (!response.ok) throw new Error('Failed to get cinema halls');
-    return response.json();
+    const response = await api.get('/api/cinemas');
+    return response.data;
   }
 
   static async getScreenings(movieId: string) {
-    const response = await fetch(`${API_BASE_URL}/api/movies/${movieId}/screens`);
-    if (!response.ok) throw new Error('Failed to get screenings');
-    return response.json();
+    const response = await api.get(`/api/movies/${movieId}/screens`);
+    return response.data;
   }
 } 

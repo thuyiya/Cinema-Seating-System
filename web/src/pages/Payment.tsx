@@ -72,7 +72,7 @@ export default function Payment() {
     setLoading(true);
 
     try {
-      const response = await BookingService.processPayment(bookingId!, {
+      await BookingService.processPayment(bookingId!, {
         cardDetails: {
           number: '4242424242424242', // Test card number
           expiry: '12/25',

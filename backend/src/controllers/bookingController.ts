@@ -4,6 +4,8 @@ import { IUser, User, UserRole } from '../models/User';
 import { Showtime } from '../models/Showtime';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import Payment from '../models/Payment';
+import { generateTransactionId } from '../utils/helpers';
 
 const GUEST_PASSWORD = 'GUEST_2323kajs';
 
@@ -111,9 +113,10 @@ export const completeBooking = async (req: Request, res: Response) => {
 
   try {
     const { bookingId } = req.params;
-    const { paymentDetails } = req.body;
+    const { cardDetails } = req.body;
 
     const booking = await Booking.findById(bookingId) as IBooking;
+
     if (!booking) {
       await session.abortTransaction();
       return res.status(404).json({ message: 'Booking not found' });
@@ -130,10 +133,35 @@ export const completeBooking = async (req: Request, res: Response) => {
       });
     }
 
-    // Process payment (mock for now)
-    const paymentSuccessful = true; // Replace with actual payment processing
+    // Validate booking status
+    if (booking.status !== 'temporary') {
+      await session.abortTransaction();
+      return res.status(400).json({ 
+        message: 'Invalid booking status. Only temporary bookings can be completed.',
+        code: 'INVALID_BOOKING_STATUS'
+      });
+    }
 
-    if (paymentSuccessful) {
+    try {
+      // Process card payment and create payment record
+      const lastFourDigits = cardDetails.number.slice(-4);
+      const [expiryMonth, expiryYear] = cardDetails.expiry.split('/');
+      
+      const payment = new Payment({
+        bookingId: booking._id,
+        amount: booking.totalAmount,
+        cardDetails: {
+          lastFourDigits,
+          expiryMonth,
+          expiryYear
+        },
+        status: 'completed',
+        transactionId: generateTransactionId()
+      });
+
+      await payment.save({ session });
+
+      // Update booking status
       booking.status = 'completed';
       booking.paymentStatus = 'completed';
       (booking as any).generateTicketNumber();
@@ -141,19 +169,36 @@ export const completeBooking = async (req: Request, res: Response) => {
 
       await session.commitTransaction();
 
-      res.json({
-        bookingId: booking._id,
-        status: booking.status,
-        paymentStatus: booking.paymentStatus,
-        ticketNumber: booking.ticketNumber
+      // Return success response with payment and booking details
+      res.status(200).json({
+        success: true,
+        booking: {
+          bookingId: booking._id,
+          status: booking.status,
+          paymentStatus: booking.paymentStatus,
+          ticketNumber: booking.ticketNumber,
+          seats: booking.seats,
+          totalAmount: booking.totalAmount,
+          showtimeId: booking.showtimeId
+        },
+        payment: {
+          transactionId: payment.transactionId,
+          amount: payment.amount,
+          status: payment.status,
+          cardDetails: {
+            lastFourDigits: payment.cardDetails.lastFourDigits
+          }
+        }
       });
-    } else {
+    } catch (paymentError) {
+      // Handle payment processing error
       booking.paymentStatus = 'failed';
       await booking.save({ session });
-      await session.commitTransaction();
       
-      res.status(400).json({
-        message: 'Payment failed',
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Payment processing failed',
         code: 'PAYMENT_FAILED'
       });
     }
@@ -161,7 +206,11 @@ export const completeBooking = async (req: Request, res: Response) => {
   } catch (error) {
     await session.abortTransaction();
     console.error('Error completing booking:', error);
-    res.status(500).json({ message: 'Error completing booking' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error completing booking',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   } finally {
     session.endSession();
   }
