@@ -146,7 +146,7 @@ export default function SelectSeats() {
       });
 
       // Navigate to payment with booking details
-      navigate(`/payment/${bookingResponse.bookingId}`, {
+      navigate(`/payment/${bookingResponse._id}`, {
         state: {
           movieId,
           showtimesId,
@@ -155,7 +155,7 @@ export default function SelectSeats() {
           showtime: `${showtime.date} ${showtime.startTime}`,
           seats: selectedSeats,
           totalAmount: calculateTotalPrice(),
-          bookingId: bookingResponse.bookingId,
+          bookingId: bookingResponse._id,
           guestInfo
         }
       });

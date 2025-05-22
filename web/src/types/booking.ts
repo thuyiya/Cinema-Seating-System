@@ -39,6 +39,7 @@ export interface SeatingMap {
 }
 
 export interface BookingRequest {
+  _id?: string;
   showtimeId: string;
   seats: {
     seatId: string;
@@ -57,18 +58,48 @@ export interface BookingRequest {
 }
 
 export interface BookingResponse {
-  bookingId: string;
-  screeningId: string;
-  movieTitle: string;
-  screenName: string;
-  showtime: string;
-  seats: string[];
-  totalAmount: number;
-  customerDetails: {
+  _id: string;
+  userId: {
+    _id: string;
     name: string;
     email: string;
-    mobile: string;
+    phone: string;
   };
-  paymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
-  ticketNumber: string;
+  showtimeId: {
+    price: {
+      REGULAR: number;
+      VIP: number;
+      ACCESSIBLE: number;
+    };
+    availableSeats: {
+      REGULAR: number;
+      VIP: number;
+      ACCESSIBLE: number;
+    };
+    _id: string;
+    movieId: string;
+    screenId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+    bookedSeats: Array<{
+      seatId: string;
+      bookingId: string;
+      _id: string;
+    }>;
+  };
+  seats: Array<{
+    seatId: string;
+    row: string;
+    number: number;
+    type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
+    _id: string;
+  }>;
+  totalAmount: number;
+  status: string;
+  paymentStatus: 'pending' | 'completed' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
 } 

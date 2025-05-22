@@ -133,13 +133,13 @@ export default function Ticket() {
             <Typography color="rgba(255,255,255,0.7)">Name</Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography>{ticket.customerDetails.name}</Typography>
+            <Typography>{ticket.userId.name}</Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography color="rgba(255,255,255,0.7)">Mobile</Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography>{ticket.customerDetails.mobile}</Typography>
+            <Typography>{ticket.userId.phone}</Typography>
           </Grid>
         </Grid>
 

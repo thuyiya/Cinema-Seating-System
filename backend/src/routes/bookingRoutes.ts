@@ -24,7 +24,7 @@ router.post('/', authenticateJWTOptional, wrapHandler(createBooking));
 router.post('/:bookingId/complete', authenticateJWTOptional, wrapHandler(completeBooking));
 
 // Get booking details (requires authentication to verify ownership)
-router.get('/:bookingId', authenticateJWTOptional, wrapHandler(getBooking));
+router.get('/:bookingId', wrapHandler(getBooking));
 
 // Cancel booking (requires authentication to verify ownership)
 router.delete('/:bookingId', authenticateJWTOptional, wrapHandler(cancelBooking));

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -8,92 +8,106 @@ import {
   Button,
   Box,
   Alert,
-  Divider,
+  CircularProgress,
   Grid,
+  Divider,
 } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
 import { BookingService } from '../services/bookingService';
 import type { BookingResponse } from '../types/booking';
 
 export default function Payment() {
+  const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
-  const [guestDetails, setGuestDetails] = useState({
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null);
+  const [contactDetails, setContactDetails] = useState({
     name: '',
     email: '',
-    mobile: sessionStorage.getItem('guestMobile') || '',
+    mobile: ''
   });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Get booking details from location state
-  const bookingDetails = location.state?.bookingDetails || {
-    movieTitle: 'Sample Movie',
-    screenName: 'Screen 1',
-    seats: ['A1', 'A2'],
-    totalAmount: 20.00,
-    showtime: '7:00 PM',
-    screeningId: '',
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
-  const validateGuestDetails = () => {
-    if (!guestDetails.name.trim()) {
-      setError('Name is required');
-      return false;
-    }
-    if (!guestDetails.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setError('Valid email is required');
-      return false;
-    }
-    if (!guestDetails.mobile.match(/^[0-9]{10}$/)) {
-      setError('Valid 10-digit mobile number is required');
-      return false;
-    }
-    return true;
+  const formatSeats = (seats: any[]) => {
+    return seats.map(seat => `${seat.row}${seat.number}`).join(', ');
   };
+
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      try {
+        const details = await BookingService.getBookingDetails(bookingId!);
+        setBookingDetails(details);
+        
+        // Set contact details from the booking
+        if (details.userId) {
+          setContactDetails({
+            name: details.userId.name,
+            email: details.userId.email,
+            mobile: details.userId.phone || ''
+          });
+        }
+        
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load booking details');
+        setLoading(false);
+      }
+    };
+
+    if (bookingId) {
+      fetchBookingDetails();
+    }
+  }, [bookingId]);
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    // Validate guest details if user is not logged in
-    if (!user && !validateGuestDetails()) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Create booking first
-      const bookingResponse = await BookingService.createBooking({
-        screeningId: bookingDetails.screeningId,
-        seats: bookingDetails.seats,
-        customerDetails: user ? undefined : guestDetails,
-        groupSize: bookingDetails.seats.length,
+      const response = await BookingService.processPayment(bookingId!, {
+        cardDetails: {
+          number: '4242424242424242', // Test card number
+          expiry: '12/25',
+          cvv: '123'
+        }
       });
 
-      // Process payment
-      const paymentResponse = await BookingService.processPayment(bookingResponse.bookingId, {
-        amount: bookingDetails.totalAmount,
-        currency: 'USD',
-      });
-
-      // Navigate to ticket page on success
-      navigate(`/ticket/${paymentResponse.bookingId}`, {
-        state: { bookingDetails: paymentResponse },
-      });
+      // Navigate to booking details page on success
+      navigate(`/booking/${bookingId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !bookingDetails) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 4 }}>
+        <Alert severity="error">{error || 'Booking not found'}</Alert>
+      </Container>
+    );
+  }
+
   return (
-    <Container maxWidth="sm">
-      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Typography variant="h5" component="h1" gutterBottom align="center">
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
           Payment Details
         </Typography>
 
@@ -108,90 +122,107 @@ export default function Payment() {
             Booking Summary
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Typography color="text.secondary">Movie</Typography>
+            <Grid item xs={12} md={6}>
+              <Typography color="text.secondary">Date</Typography>
+              <Typography variant="body1">
+                {bookingDetails.showtimeId.date ? formatDate(bookingDetails.showtimeId.date) : 'N/A'}
+              </Typography>
             </Grid>
-            <Grid item xs={6}>
-              <Typography>{bookingDetails.movieTitle}</Typography>
+            <Grid item xs={12} md={6}>
+              <Typography color="text.secondary">Show Time</Typography>
+              <Typography variant="body1">
+                {bookingDetails.showtimeId.startTime} - {bookingDetails.showtimeId.endTime}
+              </Typography>
             </Grid>
-            <Grid item xs={6}>
-              <Typography color="text.secondary">Screen</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography>{bookingDetails.screenName}</Typography>
-            </Grid>
-            <Grid item xs={6}>
+            <Grid item xs={12} md={6}>
               <Typography color="text.secondary">Seats</Typography>
+              <Typography variant="body1">
+                {formatSeats(bookingDetails.seats)}
+              </Typography>
             </Grid>
-            <Grid item xs={6}>
-              <Typography>{bookingDetails.seats.join(', ')}</Typography>
+            <Grid item xs={12} md={6}>
+              <Typography color="text.secondary">Seat Type</Typography>
+              <Typography variant="body1">
+                {bookingDetails.seats[0]?.type || 'REGULAR'}
+              </Typography>
             </Grid>
-            <Grid item xs={6}>
-              <Typography color="text.secondary">Showtime</Typography>
+            <Grid item xs={12} md={6}>
+              <Typography color="text.secondary">Booking Status</Typography>
+              <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
+                {bookingDetails.status}
+              </Typography>
             </Grid>
-            <Grid item xs={6}>
-              <Typography>{bookingDetails.showtime}</Typography>
+            <Grid item xs={12} md={6}>
+              <Typography color="text.secondary">Expires At</Typography>
+              <Typography variant="body1">
+                {bookingDetails.expiresAt ? new Date(bookingDetails.expiresAt).toLocaleTimeString() : 'N/A'}
+              </Typography>
             </Grid>
           </Grid>
         </Box>
 
-        <Box component="form" onSubmit={handlePayment}>
-          {!user && (
-            <>
-              <Typography variant="h6" gutterBottom>
-                Contact Details
-              </Typography>
+        <Divider sx={{ my: 3 }} />
+
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Contact Details
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
               <TextField
-                margin="normal"
-                required
                 fullWidth
                 label="Full Name"
-                value={guestDetails.name}
-                onChange={(e) => setGuestDetails(prev => ({ ...prev, name: e.target.value }))}
-                error={!!error && !guestDetails.name}
-                sx={{ mb: 2 }}
+                value={contactDetails.name}
+                InputProps={{ readOnly: true }}
               />
+            </Grid>
+            <Grid item xs={12} md={4}>
               <TextField
-                margin="normal"
-                required
                 fullWidth
-                label="Email Address"
-                type="email"
-                value={guestDetails.email}
-                onChange={(e) => setGuestDetails(prev => ({ ...prev, email: e.target.value }))}
-                error={!!error && !guestDetails.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)}
-                sx={{ mb: 2 }}
+                label="Email"
+                value={contactDetails.email}
+                InputProps={{ readOnly: true }}
               />
+            </Grid>
+            <Grid item xs={12} md={4}>
               <TextField
-                margin="normal"
-                required
                 fullWidth
-                label="Mobile Number"
-                value={guestDetails.mobile}
-                onChange={(e) => setGuestDetails(prev => ({ ...prev, mobile: e.target.value }))}
-                error={!!error && !guestDetails.mobile.match(/^[0-9]{10}$/)}
-                helperText="10-digit mobile number"
-                sx={{ mb: 3 }}
+                label="Mobile"
+                value={contactDetails.mobile}
+                InputProps={{ readOnly: true }}
               />
-              <Divider sx={{ my: 3 }} />
-            </>
-          )}
-
-          <Typography variant="h6" align="right" gutterBottom>
-            Total Amount: ${bookingDetails.totalAmount.toFixed(2)}
-          </Typography>
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={loading}
-            sx={{ mt: 2 }}
-          >
-            {loading ? 'Processing Payment...' : `Pay $${bookingDetails.totalAmount.toFixed(2)}`}
-          </Button>
+            </Grid>
+          </Grid>
         </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Payment Summary
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs>
+              <Typography variant="body1">Total Amount</Typography>
+            </Grid>
+            <Grid item>
+              <Typography variant="h5" color="primary">
+                ${bookingDetails.totalAmount.toFixed(2)}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
+        <Button
+          fullWidth
+          variant="contained"
+          color="primary"
+          size="large"
+          onClick={handlePayment}
+          disabled={loading}
+        >
+          {loading ? 'Processing Payment...' : `Pay $${bookingDetails.totalAmount.toFixed(2)}`}
+        </Button>
       </Paper>
     </Container>
   );
