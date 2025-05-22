@@ -10,6 +10,7 @@ import {
   CircularProgress,
   Divider,
   Alert,
+  TextField,
 } from '@mui/material';
 import type { Showtime, Seat } from '../../types/movie';
 import SeatLayout from '../../components/SeatLayout';
@@ -17,6 +18,7 @@ import GuestInfoDialog from '../../components/GuestInfoDialog';
 import type { GuestInfo } from '../../components/GuestInfoDialog';
 import { useAuth } from '../../context/AuthContext';
 import { BookingService } from '../../services/bookingService';
+import { SeatSuggestionService } from '../../services/seatSuggestionService';
 
 interface Section {
   name: string;
@@ -32,6 +34,7 @@ export default function SelectSeats() {
   const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [guestInfo, setGuestInfo] = useState<GuestInfo | null>(null);
+  const [groupSize, setGroupSize] = useState<number>(2);
   const { movieId, showtimesId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -181,6 +184,15 @@ export default function SelectSeats() {
     await createTemporaryBooking();
   };
 
+  const handleSuggestSeats = () => {
+    const suggestedSeats = SeatSuggestionService.findBestSeats(sections, groupSize);
+    if (suggestedSeats.length > 0) {
+      setSelectedSeats(suggestedSeats.map(seat => seat.id));
+    } else {
+      setError(`No suitable seats found for a group of ${groupSize}`);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -228,6 +240,26 @@ export default function SelectSeats() {
       </Box>
 
       <Paper sx={{ p: 3, mb: 4 }}>
+        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TextField
+            type="number"
+            label="Group Size"
+            value={groupSize}
+            onChange={(e) => setGroupSize(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+            inputProps={{ min: 1, max: 10 }}
+            size="small"
+            sx={{ width: 100 }}
+          />
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleSuggestSeats}
+            disabled={loading || !sections.length}
+          >
+            Suggest Best Seats
+          </Button>
+        </Box>
+
         <Typography variant="h6" gutterBottom align="center">
           Screen
         </Typography>
