@@ -17,14 +17,26 @@ export const createBooking = async (req: Request, res: Response) => {
 
     // If no user is logged in, create a guest user
     if (!userId && guestInfo) {
-      const guestUser = new User({
-        name: guestInfo.name,
-        email: guestInfo.email,
-        phone: guestInfo.mobile, // Use 'phone' as per your model
-        password: await bcrypt.hash(GUEST_PASSWORD, 10),
-        role: 'guest'
-      });
-      await guestUser.save({ session });
+      // First try to find an existing user with this email
+      let guestUser = await User.findOne({ email: guestInfo.email }).session(session);
+
+      if (guestUser) {
+        // Update the phone number if it has changed
+        if (guestUser.phone !== guestInfo.mobile) {
+          guestUser.phone = guestInfo.mobile;
+          await guestUser.save({ session });
+        }
+      } else {
+        // Create new guest user if no existing user found
+        guestUser = new User({
+          name: guestInfo.name,
+          email: guestInfo.email,
+          phone: guestInfo.mobile,
+          password: await bcrypt.hash(GUEST_PASSWORD, 10),
+          role: 'guest'
+        });
+        await guestUser.save({ session });
+      }
       userId = guestUser._id;
     }
 

@@ -139,12 +139,19 @@ bookingSchema.statics.cleanupExpiredBookings = async function() {
     for (const booking of expiredBookings) {
       const showtime = await mongoose.model('Showtime').findById(booking.showtimeId).session(session);
       if (showtime) {
+        // Remove only the seats associated with this booking
         showtime.bookedSeats = showtime.bookedSeats.filter(
-          (seat: { seatId: mongoose.Types.ObjectId }) => 
-            !booking.seats.find((bs: { seatId: mongoose.Types.ObjectId }) => 
-              bs.seatId.toString() === seat.seatId.toString()
-            )
+          (seat: { bookingId: mongoose.Types.ObjectId }) => seat.bookingId.toString() !== booking._id.toString()
         );
+        
+        // Update available seats count
+        booking.seats.forEach((seat: { type: string }) => {
+          const seatType = seat.type.toUpperCase();
+          if (showtime.availableSeats[seatType] !== undefined) {
+            showtime.availableSeats[seatType] += 1;
+          }
+        });
+        
         await showtime.save();
       }
     }
@@ -153,6 +160,100 @@ bookingSchema.statics.cleanupExpiredBookings = async function() {
   } catch (error) {
     await session.abortTransaction();
     console.error('Error cleaning up expired bookings:', error);
+  } finally {
+    session.endSession();
+  }
+};
+
+interface IBookingSeat {
+  seatId: mongoose.Types.ObjectId;
+  type: string;
+}
+
+interface IBookingDocument extends Document {
+  _id: mongoose.Types.ObjectId;
+  seats: IBookingSeat[];
+}
+
+interface IShowtimeSeat {
+  bookingId: mongoose.Types.ObjectId;
+  seatId: mongoose.Types.ObjectId;
+}
+
+// Static method to cleanup orphaned seat bookings
+bookingSchema.statics.cleanupOrphanedSeats = async function() {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Get all showtimes
+    const showtimes = await mongoose.model('Showtime').find({}).session(session);
+
+    for (const showtime of showtimes) {
+      // Get all valid booking IDs for this showtime
+      const validBookings = await this.find({
+        _id: { $in: showtime.bookedSeats.map((seat: IShowtimeSeat) => seat.bookingId) },
+        status: { $in: ['temporary', 'completed'] },
+        $or: [
+          { status: 'completed' },
+          { 
+            status: 'temporary',
+            expiresAt: { $gt: new Date() }
+          }
+        ]
+      }).session(session) as IBookingDocument[];
+
+      const validBookingIds = validBookings.map(booking => booking._id.toString());
+
+      // Filter out seats with invalid bookings
+      const originalSeatsCount = showtime.bookedSeats.length;
+      showtime.bookedSeats = showtime.bookedSeats.filter(
+        (seat: IShowtimeSeat) => validBookingIds.includes(seat.bookingId.toString())
+      );
+
+      // If seats were removed, update available seats count
+      const removedSeatsCount = originalSeatsCount - showtime.bookedSeats.length;
+      if (removedSeatsCount > 0) {
+        // Since we don't know the exact seat types that were removed,
+        // we'll need to recalculate from the screen configuration
+        const screen = await mongoose.model('Screen').findById(showtime.screenId).session(session);
+        if (screen) {
+          const availableSeats = {
+            REGULAR: screen.sections.reduce((total: number, section: { seats: Array<{ type: string; status: string }> }) => 
+              total + section.seats.filter(seat => 
+                seat.type === 'REGULAR' && seat.status === 'available'
+              ).length, 0),
+            VIP: screen.sections.reduce((total: number, section: { seats: Array<{ type: string; status: string }> }) => 
+              total + section.seats.filter(seat => 
+                seat.type === 'VIP' && seat.status === 'available'
+              ).length, 0),
+            ACCESSIBLE: screen.sections.reduce((total: number, section: { seats: Array<{ type: string; status: string }> }) => 
+              total + section.seats.filter(seat => 
+                seat.type === 'ACCESSIBLE' && seat.status === 'available'
+              ).length, 0)
+          };
+
+          // Subtract currently booked seats
+          showtime.bookedSeats.forEach((bookedSeat: IShowtimeSeat) => {
+            const booking = validBookings.find(b => b._id.toString() === bookedSeat.bookingId.toString());
+            if (booking) {
+              const seat = booking.seats.find(s => s.seatId.toString() === bookedSeat.seatId.toString());
+              if (seat) {
+                availableSeats[seat.type as keyof typeof availableSeats] -= 1;
+              }
+            }
+          });
+
+          showtime.availableSeats = availableSeats;
+        }
+        await showtime.save();
+      }
+    }
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Error cleaning up orphaned seats:', error);
   } finally {
     session.endSession();
   }
