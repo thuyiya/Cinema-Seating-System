@@ -34,17 +34,17 @@ const StyledSeat = styled(Paper)(({ theme }) => ({
     border: `2px solid ${theme.palette.info.dark}`,
   },
   '&.broken': {
-    backgroundColor: '#ff1744',
-    color: '#ffffff',
-    border: `2px solid #b2102f`,
+    backgroundColor: 'rgba(255, 23, 68, 0.4)',
+    color: '#dddddd',
+    border: `2px solid rgba(255, 23, 68, 0.6)`,
   },
   '&.maintenance': {
-    backgroundColor: '#ffd600',
-    color: '#000000',
-    border: `2px solid #c7a500`,
+    backgroundColor: 'rgba(255, 214, 0, 0.4)',
+    color: '#dddddd',
+    border: `2px solid rgba(255, 214, 0, 0.6)`,
   },
   '&.booked': {
-    backgroundColor: '#4caf50',
+    backgroundColor: 'rgba(76, 175, 80, 0.4)',
     color: '#ffffff',
     cursor: 'not-allowed',
     '&::after': {
@@ -70,8 +70,8 @@ const StyledSeat = styled(Paper)(({ theme }) => ({
     transform: 'scale(1.05)',
   },
   '&.selected': {
-    border: `2px solid ${theme.palette.primary.light}`,
-    backgroundColor: theme.palette.primary.dark,
+    border: `4px solid ${theme.palette.primary.light}`,
+    backgroundColor: "#4caf50",
     color: theme.palette.common.white,
   },
   '&.broken, &.maintenance': {
