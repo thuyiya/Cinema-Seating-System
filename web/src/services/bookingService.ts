@@ -1,6 +1,41 @@
 import type { BookingRequest, BookingResponse, Seat, SeatingMap } from '../types/booking';
 import api from './api';
 
+interface TicketResponse {
+  success: boolean;
+  ticket: {
+    ticketNumber: string;
+    movieDetails: {
+      title: string;
+      posterUrl: string;
+      duration: number;
+    };
+    showtime: {
+      date: string;
+      startTime: string;
+      endTime: string;
+      screen: string;
+    };
+    seats: Array<{
+      row: string;
+      number: number;
+      type: string;
+    }>;
+    totalAmount: number;
+    customerDetails: {
+      name: string;
+      email: string;
+      phone: string;
+    };
+    status: string;
+    qrCode: string;
+    payment: {
+      transactionId: string;
+      status: string;
+    };
+  };
+}
+
 export class BookingService {
   static async findSeatsForGroup(groupSize: number, screeningId: string): Promise<Seat[]> {
     const response = await api.get<Seat[]>(`/screens/${screeningId}/seats/group`, {
@@ -111,6 +146,11 @@ export class BookingService {
 
   static async getScreenings(movieId: string) {
     const response = await api.get(`/api/movies/${movieId}/screens`);
+    return response.data;
+  }
+
+  static async getTicketDetails(ticketId: string): Promise<TicketResponse> {
+    const response = await api.get<TicketResponse>(`/api/tickets/${ticketId}`);
     return response.data;
   }
 } 

@@ -13,6 +13,7 @@ import screenRoutes from './routes/screenRoutes';
 import showtimeRoutes from './routes/showtimeRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import ticketRoutes from './routes/ticketRoutes';
 import { startBookingCleanupJob } from './jobs/bookingCleanup';
 
 const app = express();
@@ -59,6 +60,8 @@ const startServer = async () => {
     apiRouter.use('/showtimes', showtimeRoutes);
     apiRouter.use('/bookings', bookingRoutes);
     apiRouter.use('/payments', paymentRoutes);
+    apiRouter.use('/tickets', ticketRoutes);
+    
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });

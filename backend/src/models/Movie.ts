@@ -10,6 +10,7 @@ export interface IMovie extends Document {
   title: string;
   overview: string;
   posterPath: string;
+  posterUrl: string;
   releaseDate: Date;
   rating: number;
   duration: number;  // Duration in minutes
@@ -45,6 +46,10 @@ const movieSchema = new Schema<IMovie>({
     required: true
   },
   posterPath: {
+    type: String,
+    required: true
+  },
+  posterUrl: {
     type: String,
     required: true
   },

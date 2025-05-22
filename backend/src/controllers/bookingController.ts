@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import Payment from '../models/Payment';
 import { generateTransactionId } from '../utils/helpers';
+import { createTicket } from './ticketController';
 
 const GUEST_PASSWORD = 'GUEST_2323kajs';
 
@@ -127,23 +128,12 @@ export const completeBooking = async (req: Request, res: Response) => {
 
     const booking = await Booking.findById(bookingId) as IBooking;
     if (!booking) {
-      console.log('Booking not found:', bookingId);
       await session.abortTransaction();
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    console.log('Found booking:', {
-      id: booking._id,
-      status: booking.status,
-      amount: booking.totalAmount
-    });
-
     // Check if booking has expired
     if (booking.status === 'temporary' && booking.expiresAt && booking.expiresAt < new Date()) {
-      console.log('Booking has expired:', {
-        expiresAt: booking.expiresAt,
-        currentTime: new Date()
-      });
       booking.status = 'cancelled';
       await booking.save({ session });
       await session.commitTransaction();
@@ -155,7 +145,6 @@ export const completeBooking = async (req: Request, res: Response) => {
 
     // Validate booking status
     if (booking.status !== 'temporary') {
-      console.log('Invalid booking status:', booking.status);
       await session.abortTransaction();
       return res.status(400).json({ 
         message: 'Invalid booking status. Only temporary bookings can be completed.',
@@ -173,7 +162,7 @@ export const completeBooking = async (req: Request, res: Response) => {
         throw new Error('Invalid card expiry format');
       }
 
-      // Basic card validation (mock)
+      // Basic card validation
       if (cardDetails.number.length !== 16 || !/^\d+$/.test(cardDetails.number)) {
         throw new Error('Invalid card number');
       }
@@ -194,12 +183,6 @@ export const completeBooking = async (req: Request, res: Response) => {
         transactionId: generateTransactionId()
       });
 
-      console.log('Creating payment record:', {
-        bookingId: payment.bookingId,
-        amount: payment.amount,
-        status: payment.status
-      });
-
       await payment.save({ session });
 
       // Update booking status
@@ -208,10 +191,12 @@ export const completeBooking = async (req: Request, res: Response) => {
       (booking as any).generateTicketNumber();
       await booking.save({ session });
 
-      await session.commitTransaction();
-      console.log('Payment processed successfully');
+      // Create ticket
+      const ticket = await createTicket(booking, payment);
 
-      // Return success response with payment and booking details
+      await session.commitTransaction();
+
+      // Return success response with payment, booking, and ticket details
       res.status(200).json({
         success: true,
         booking: {
@@ -230,11 +215,14 @@ export const completeBooking = async (req: Request, res: Response) => {
           cardDetails: {
             lastFourDigits: payment.cardDetails.lastFourDigits
           }
+        },
+        ticket: {
+          ticketNumber: ticket.ticketNumber,
+          qrCode: ticket.qrCode
         }
       });
     } catch (paymentError) {
       // Handle payment processing error
-      console.error('Payment processing error:', paymentError);
       booking.paymentStatus = 'failed';
       await booking.save({ session });
       
