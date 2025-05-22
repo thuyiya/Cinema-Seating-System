@@ -79,6 +79,12 @@ const StyledSeat = styled(Paper)(({ theme }) => ({
   },
   '&.booked:not(.admin)': {
     cursor: 'not-allowed',
+  },
+  '&.broken:not(.admin)': {
+    cursor: 'not-allowed',
+  },
+  '&.maintenance:not(.admin)': {
+    cursor: 'not-allowed',
   }
 }));
 
@@ -221,7 +227,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
                       {rowSeats.map((seat, seatIndex) => {
                         const isAisle = layout?.aislePositions?.includes(seat.number);
                         const seatLabel = `${rowLetter}${seat.number}`;
-                        const isDisabled = !isAdminView && (seat.status === 'booked' || seat.isBooked);
+                        const isDisabled = !isAdminView && (seat.status === 'booked' || seat.status === 'maintenance' || seat.status === 'broken' || seat.isBooked);
 
                         return (
                           <React.Fragment key={seat.id}>

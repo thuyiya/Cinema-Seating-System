@@ -182,8 +182,10 @@ export default function SelectSeats() {
                 disabled 
                 sx={{ 
                   backgroundColor: 'secondary.light',
-                  '& .MuiButton-label': { color: '#000000' },
-                  color: '#000000'
+                  color: 'black',
+                  '&.Mui-disabled': {
+                    color: 'black'
+                  }
                 }}
               >
                 VIP (${showtime?.price?.VIP || 0})
@@ -195,8 +197,10 @@ export default function SelectSeats() {
                 disabled 
                 sx={{ 
                   backgroundColor: 'info.light',
-                  '& .MuiButton-label': { color: '#000000' },
-                  color: '#000000'
+                  color: 'black',
+                  '&.Mui-disabled': {
+                    color: 'black'
+                  }
                 }}
               >
                 Accessible (${showtime?.price?.ACCESSIBLE || 0})
