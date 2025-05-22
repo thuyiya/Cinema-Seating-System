@@ -53,6 +53,18 @@ export class BookingService {
     return simulatedMap;
   }
 
+  static async getShowtime(showtimeId: string) {
+    const response = await fetch(`${API_BASE_URL}/api/showtimes/${showtimeId}`);
+    if (!response.ok) throw new Error('Failed to fetch showtime');
+    return response.json();
+  }
+
+  static async getShowtimeSeats(showtimeId: string, screenId: string) {
+    const response = await fetch(`${API_BASE_URL}/api/showtimes/${showtimeId}/${screenId}/seats`);
+    if (!response.ok) throw new Error('Failed to fetch seats');
+    return response.json();
+  }
+
   static async createBooking(bookingRequest: BookingRequest): Promise<BookingResponse> {
     const response = await fetch(`${API_BASE_URL}/api/bookings`, {
       method: 'POST',
@@ -71,7 +83,7 @@ export class BookingService {
   }
 
   static async processPayment(bookingId: string, paymentDetails: any): Promise<BookingResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/payment`, {
+    const response = await fetch(`${API_BASE_URL}/api/bookings/${bookingId}/complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

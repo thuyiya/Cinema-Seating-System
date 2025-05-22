@@ -39,15 +39,16 @@ export interface SeatingMap {
 }
 
 export interface BookingRequest {
-  screeningId: string;
+  showtimeId: string;
   seats: string[];
-  customerDetails?: {
+  guestInfo?: {
     name: string;
     email: string;
     mobile: string;
   };
   requestType?: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
   groupSize: number;
+  totalAmount: number;
 }
 
 export interface BookingResponse {

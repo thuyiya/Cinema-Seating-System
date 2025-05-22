@@ -9,9 +9,14 @@ import {
   Paper,
   CircularProgress,
   Divider,
+  Alert,
 } from '@mui/material';
 import type { Showtime, Seat } from '../../types/movie';
 import SeatLayout from '../../components/SeatLayout';
+import GuestInfoDialog from '../../components/GuestInfoDialog';
+import type { GuestInfo } from '../../components/GuestInfoDialog';
+import { useAuth } from '../../context/AuthContext';
+import { BookingService } from '../../services/bookingService';
 
 interface Section {
   name: string;
@@ -22,61 +27,61 @@ export default function SelectSeats() {
   const [showtime, setShowtime] = useState<Showtime | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGuestDialogOpen, setIsGuestDialogOpen] = useState(false);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [guestInfo, setGuestInfo] = useState<GuestInfo | null>(null);
   const { movieId, showtimesId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const fetchShowtimeAndSeats = async () => {
+    if (!showtimesId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}`);
+      if (!response.ok) throw new Error('Failed to fetch showtime');
+      
+      const showtime = await response.json();
+      setShowtime(showtime);
+
+      // Get the seating information
+      const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtime.screenId._id}/seats`);
+      if (!seatsResponse.ok) throw new Error('Failed to fetch seats');
+      
+      const seatingMap = await seatsResponse.json();
+      setSections(seatingMap);
+    } catch (error) {
+      setError('Failed to load seating information. Please try again later.');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchShowtimeAndSeats = async () => {
-      try {
-        setLoading(true);
-        // Fetch showtime details
-        const showtimeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}`);
-        if (!showtimeResponse.ok) {
-          throw new Error('Failed to fetch showtime details');
-        }
-        const showtimeData = await showtimeResponse.json();
-        setShowtime(showtimeData);
-
-        // Fetch seats for the showtime
-        const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtimeData.screenId._id}/seats`);
-        if (!seatsResponse.ok) {
-          throw new Error('Failed to fetch seats');
-        }
-        const seatsData = await seatsResponse.json();
-        
-        // Transform seats data to match the required format
-        const transformedSections = seatsData.map((section: any) => ({
-          name: section.name,
-          seats: section.seats.map((seat: any) => ({
-            id: `${seat.row}-${seat.number}`,
-            row: seat.row.toString(),
-            number: seat.number,
-            type: seat.type || 'REGULAR', // Default to REGULAR if not specified
-            isBooked: seat.status === 'booked',
-            position: seat.position || 'middle', // Default to middle if not specified
-            preferredView: seat.preferredView || false,
-            status: seat.status || 'available'
-          }))
-        }));
-        
-        setSections(transformedSections);
-        setShowtime(showtimeData);
-        setLoading(false);
-      } catch (error) {
-        setError('Failed to load seating information. Please try again later.');
-        console.error('Error:', error);
-        setLoading(false);
-      }
-    };
-
     if (showtimesId) {
       fetchShowtimeAndSeats();
     }
   }, [showtimesId]);
 
+  // Show guest dialog when page loads for non-logged-in users
+  useEffect(() => {
+    if (!loading && !user && !guestInfo) {
+      setIsGuestDialogOpen(true);
+    }
+  }, [loading, user, guestInfo]);
+
   const handleSeatClick = (seatId: string, seat: Seat) => {
+    if (!user && !guestInfo) {
+      setIsGuestDialogOpen(true);
+      return;
+    }
+    
     setSelectedSeats(prev => {
       if (prev.includes(seatId)) {
         return prev.filter(id => id !== seatId);
@@ -95,20 +100,63 @@ export default function SelectSeats() {
     }, 0);
   };
 
-  const handleProceedToPayment = () => {
-    if (!showtime) return;
+  const handleGuestSubmit = async (guestInfo: GuestInfo) => {
+    setGuestInfo(guestInfo);
+    setIsGuestDialogOpen(false);
+  };
 
-    navigate('/payment', {
-      state: {
-        movieId,
-        showtimesId,
-        movieTitle: showtime.movieId.title,
-        screenName: `Screen ${showtime.screenId.number} - ${showtime.screenId.name}`,
-        showtime: `${showtime.date} ${showtime.startTime}`,
+  const createTemporaryBooking = async () => {
+    if (!showtime) return;
+    if (!user && !guestInfo) {
+      setIsGuestDialogOpen(true);
+      return;
+    }
+    
+    setBookingInProgress(true);
+    setError(null);
+
+    try {
+      const bookingResponse = await BookingService.createBooking({
+        showtimeId: showtimesId!,
         seats: selectedSeats,
-        totalAmount: calculateTotalPrice()
+        guestInfo: guestInfo || undefined,
+        groupSize: selectedSeats.length,
+        totalAmount: calculateTotalPrice(),
+      });
+
+      // Navigate to payment with booking details
+      navigate('/payment', {
+        state: {
+          movieId,
+          showtimesId,
+          movieTitle: showtime.movieId.title,
+          screenName: `Screen ${showtime.screenId.number} - ${showtime.screenId.name}`,
+          showtime: `${showtime.date} ${showtime.startTime}`,
+          seats: selectedSeats,
+          totalAmount: calculateTotalPrice(),
+          bookingId: bookingResponse.bookingId,
+          guestInfo // Pass guest info to payment page
+        }
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('SEAT_CONFLICT')) {
+        setError('Sorry, some of your selected seats have just been booked. Please choose different seats.');
+        // Refresh the showtime data to get updated seat availability
+        fetchShowtimeAndSeats();
+      } else {
+        setError('Failed to create booking. Please try again.');
       }
-    });
+      setBookingInProgress(false);
+    }
+  };
+
+  const handleProceedToPayment = async () => {
+    if (!showtime || selectedSeats.length === 0) return;
+    if (!user && !guestInfo) {
+      setIsGuestDialogOpen(true);
+      return;
+    }
+    await createTemporaryBooking();
   };
 
   if (loading) {
@@ -125,6 +173,17 @@ export default function SelectSeats() {
         <Typography color="error" align="center">
           {error || 'Showtime not found'}
         </Typography>
+        {error?.includes('seats have just been booked') && (
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={() => setError(null)}
+            sx={{ mt: 2 }}
+          >
+            Select Different Seats
+          </Button>
+        )}
       </Container>
     );
   }
@@ -239,13 +298,19 @@ export default function SelectSeats() {
           color="primary"
           fullWidth
           size="large"
-          disabled={selectedSeats.length === 0}
+          disabled={selectedSeats.length === 0 || bookingInProgress}
           onClick={handleProceedToPayment}
           sx={{ mt: 2 }}
         >
-          Proceed to Payment
+          {bookingInProgress ? 'Processing...' : 'Proceed to Payment'}
         </Button>
       </Paper>
+
+      <GuestInfoDialog
+        open={isGuestDialogOpen}
+        onClose={() => setIsGuestDialogOpen(false)}
+        onSubmit={handleGuestSubmit}
+      />
     </Container>
   );
 } 
