@@ -30,7 +30,9 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { format } from 'date-fns';
+import CurrentBookingsDialog from '../../components/CurrentBookingsDialog';
 
 interface Movie {
   _id: string;
@@ -42,6 +44,11 @@ interface Screen {
   _id: string;
   number: number;
   name: string;
+  layout: {
+    type: 'straight' | 'curved' | 'c-shaped';
+    hasBalcony: boolean;
+    aislePositions: number[];
+  };
 }
 
 interface Price {
@@ -90,6 +97,8 @@ export default function ManageShowtimes() {
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingShowtime, setEditingShowtime] = useState<Showtime | null>(null);
+  const [openBookingsDialog, setOpenBookingsDialog] = useState(false);
+  const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(null);
   const [formData, setFormData] = useState<FormData>({
     movieId: '',
     screenId: '',
@@ -164,6 +173,11 @@ export default function ManageShowtimes() {
         _id: screen._id,
         number: screen.number,
         name: screen.name,
+        layout: screen.layout || {
+          type: 'straight',
+          hasBalcony: false,
+          aislePositions: []
+        }
       })) : [];
       setScreens(formattedScreens);
     } catch (error) {
@@ -346,6 +360,11 @@ export default function ManageShowtimes() {
     }
   };
 
+  const handleViewBookings = (showtime: Showtime) => {
+    setSelectedShowtime(showtime);
+    setOpenBookingsDialog(true);
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -433,10 +452,13 @@ export default function ManageShowtimes() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton onClick={() => handleOpenDialog(showtime)} color="primary">
+                    <IconButton onClick={() => handleViewBookings(showtime)} color="info" title="View Current Bookings">
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleOpenDialog(showtime)} color="primary" title="Edit">
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleDelete(showtime._id)} color="error">
+                    <IconButton onClick={() => handleDelete(showtime._id)} color="error" title="Delete">
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
@@ -553,6 +575,14 @@ export default function ManageShowtimes() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {selectedShowtime && (
+          <CurrentBookingsDialog
+            open={openBookingsDialog}
+            onClose={() => setOpenBookingsDialog(false)}
+            showtime={selectedShowtime}
+          />
+        )}
       </Container>
     </LocalizationProvider>
   );

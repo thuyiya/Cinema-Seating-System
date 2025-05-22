@@ -13,7 +13,7 @@ import {
 export interface GuestInfo {
   name: string;
   email: string;
-  mobile: string;
+  phone: string;
 }
 
 interface GuestInfoDialogProps {
@@ -26,7 +26,7 @@ export default function GuestInfoDialog({ open, onClose, onSubmit }: GuestInfoDi
   const [guestInfo, setGuestInfo] = useState<GuestInfo>({
     name: '',
     email: '',
-    mobile: ''
+    phone: ''
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +39,8 @@ export default function GuestInfoDialog({ open, onClose, onSubmit }: GuestInfoDi
       setError('Valid email is required');
       return false;
     }
-    console.log(guestInfo.mobile);
-    if (!guestInfo.mobile.match(/^[0-9]{10}$/)) {
+    console.log(guestInfo.phone);
+    if (!guestInfo.phone.match(/^[0-9]{10}$/)) {
         setError('Valid 10-digit mobile number is required');
         return false;
       }
@@ -50,7 +50,7 @@ export default function GuestInfoDialog({ open, onClose, onSubmit }: GuestInfoDi
   const handleSubmit = () => {
     if (validateForm()) {
       onSubmit(guestInfo);
-      setGuestInfo({ name: '', email: '', mobile: '' });
+      setGuestInfo({ name: '', email: '', phone: '' });
       setError(null);
     }
   };
@@ -86,9 +86,9 @@ export default function GuestInfoDialog({ open, onClose, onSubmit }: GuestInfoDi
             label="Mobile Number"
             fullWidth
             required
-            value={guestInfo.mobile}
-            onChange={(e) => setGuestInfo(prev => ({ ...prev, mobile: e.target.value }))}
-            error={!!error && !guestInfo.mobile.match(/^[0-9]{10}$/)}
+            value={guestInfo.phone}
+            onChange={(e) => setGuestInfo(prev => ({ ...prev, phone: e.target.value }))}
+            error={!!error && !guestInfo.phone.match(/^[0-9]{10}$/)}
             helperText="10-digit mobile number"
           />
         </Box>

@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { Request, Response } from 'express';
 import { User, UserRole, IUser } from '../models/User';
 import { generateToken, authenticateJWT, authorizeRole } from '../middleware/auth';
+import { validateRegistration, validateLogin } from '../middleware/validation';
 
 const router = Router();
 
 // Register new user
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', validateRegistration, async (req: Request, res: Response) => {
   try {
     const { email, password, name, phone, adminKey } = req.body;
 
@@ -58,7 +59,7 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 // Login user
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', validateLogin, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 

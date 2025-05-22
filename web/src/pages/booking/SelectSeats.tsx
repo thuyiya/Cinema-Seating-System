@@ -53,8 +53,8 @@ export default function SelectSeats() {
       const seatsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/showtimes/${showtimesId}/${showtime.screenId._id}/seats`);
       if (!seatsResponse.ok) throw new Error('Failed to fetch seats');
       
-      const seatingMap = await seatsResponse.json();
-      setSections(seatingMap);
+      const seatingData = await seatsResponse.json();
+      setSections(seatingData.sections);
     } catch (error) {
       setError('Failed to load seating information. Please try again later.');
       console.error('Error:', error);
