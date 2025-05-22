@@ -79,7 +79,7 @@ export default function Payment() {
       });
 
       // Navigate to booking details page on success
-      navigate(`/booking/${bookingId}`);
+      navigate(`/ticket/${bookingId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
       setLoading(false);
