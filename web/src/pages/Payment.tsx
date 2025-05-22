@@ -73,11 +73,9 @@ export default function Payment() {
 
     try {
       await BookingService.processPayment(bookingId!, {
-        cardDetails: {
-          number: '4242424242424242', // Test card number
-          expiry: '12/25',
-          cvv: '123'
-        }
+        number: '4242424242424242', // Test card number
+        expiry: '12/25',
+        cvv: '123'
       });
 
       // Navigate to booking details page on success

@@ -115,15 +115,35 @@ export const completeBooking = async (req: Request, res: Response) => {
     const { bookingId } = req.params;
     const { cardDetails } = req.body;
 
-    const booking = await Booking.findById(bookingId) as IBooking;
+    // Validate card details
+    if (!cardDetails || !cardDetails.number || !cardDetails.expiry || !cardDetails.cvv) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid card details provided',
+        code: 'INVALID_CARD_DETAILS'
+      });
+    }
 
+    const booking = await Booking.findById(bookingId) as IBooking;
     if (!booking) {
+      console.log('Booking not found:', bookingId);
       await session.abortTransaction();
       return res.status(404).json({ message: 'Booking not found' });
     }
 
+    console.log('Found booking:', {
+      id: booking._id,
+      status: booking.status,
+      amount: booking.totalAmount
+    });
+
     // Check if booking has expired
     if (booking.status === 'temporary' && booking.expiresAt && booking.expiresAt < new Date()) {
+      console.log('Booking has expired:', {
+        expiresAt: booking.expiresAt,
+        currentTime: new Date()
+      });
       booking.status = 'cancelled';
       await booking.save({ session });
       await session.commitTransaction();
@@ -135,6 +155,7 @@ export const completeBooking = async (req: Request, res: Response) => {
 
     // Validate booking status
     if (booking.status !== 'temporary') {
+      console.log('Invalid booking status:', booking.status);
       await session.abortTransaction();
       return res.status(400).json({ 
         message: 'Invalid booking status. Only temporary bookings can be completed.',
@@ -146,6 +167,20 @@ export const completeBooking = async (req: Request, res: Response) => {
       // Process card payment and create payment record
       const lastFourDigits = cardDetails.number.slice(-4);
       const [expiryMonth, expiryYear] = cardDetails.expiry.split('/');
+
+      // Validate card expiry
+      if (!expiryMonth || !expiryYear || isNaN(Number(expiryMonth)) || isNaN(Number(expiryYear))) {
+        throw new Error('Invalid card expiry format');
+      }
+
+      // Basic card validation (mock)
+      if (cardDetails.number.length !== 16 || !/^\d+$/.test(cardDetails.number)) {
+        throw new Error('Invalid card number');
+      }
+
+      if (cardDetails.cvv.length !== 3 || !/^\d+$/.test(cardDetails.cvv)) {
+        throw new Error('Invalid CVV');
+      }
       
       const payment = new Payment({
         bookingId: booking._id,
@@ -159,6 +194,12 @@ export const completeBooking = async (req: Request, res: Response) => {
         transactionId: generateTransactionId()
       });
 
+      console.log('Creating payment record:', {
+        bookingId: payment.bookingId,
+        amount: payment.amount,
+        status: payment.status
+      });
+
       await payment.save({ session });
 
       // Update booking status
@@ -168,6 +209,7 @@ export const completeBooking = async (req: Request, res: Response) => {
       await booking.save({ session });
 
       await session.commitTransaction();
+      console.log('Payment processed successfully');
 
       // Return success response with payment and booking details
       res.status(200).json({
@@ -192,13 +234,14 @@ export const completeBooking = async (req: Request, res: Response) => {
       });
     } catch (paymentError) {
       // Handle payment processing error
+      console.error('Payment processing error:', paymentError);
       booking.paymentStatus = 'failed';
       await booking.save({ session });
       
       await session.abortTransaction();
       return res.status(400).json({
         success: false,
-        message: 'Payment processing failed',
+        message: paymentError instanceof Error ? paymentError.message : 'Payment processing failed',
         code: 'PAYMENT_FAILED'
       });
     }
