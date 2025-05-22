@@ -5,6 +5,13 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import jwt from 'jsonwebtoken';
 import { User, UserRole, IUser } from '../models/User';
 
+// Extend Express types
+declare global {
+  namespace Express {
+    interface User extends IUser {}
+  }
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
 
@@ -54,12 +61,30 @@ export const generateToken = (user: IUser): string => {
   return jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 };
 
-export const authenticateJWT = passport.authenticate('jwt', { session: false });
+export const authenticateJWT = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate('jwt', { session: false }, (err: any, user: IUser, info: any) => {
+    if (err) {
+      return next(err);
+    }
+    if (user) {
+      req.user = user;
+    }
+    next();
+  })(req, res, next);
+};
+
+export const authenticateJWTOptional = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate('jwt', { session: false }, (err: any, user: IUser, info: any) => {
+    if (user) {
+      req.user = user;
+    }
+    next();
+  })(req, res, next);
+};
 
 export const authorizeRole = (roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as IUser;
-    if (!user || !roles.includes(user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: 'Unauthorized' });
     }
     next();

@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes';
 import movieRoutes from './routes/movieRoutes';
 import screenRoutes from './routes/screenRoutes';
 import showtimeRoutes from './routes/showtimeRoutes';
+import bookingRoutes from './routes/bookingRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -50,6 +51,7 @@ const startServer = async () => {
     apiRouter.use('/movies', movieRoutes);
     apiRouter.use('/screens', screenRoutes);
     apiRouter.use('/showtimes', showtimeRoutes);
+    apiRouter.use('/bookings', bookingRoutes);
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
