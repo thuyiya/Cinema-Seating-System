@@ -17,9 +17,11 @@ import {
   IconButton,
   Alert,
   Chip,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Search as SearchIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 
 interface Movie {
@@ -54,6 +56,7 @@ export default function ManageMovies() {
     nowShowing: [],
     comingSoon: []
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const [databaseMovies, setDatabaseMovies] = useState<DatabaseMovie[]>([]);
   const [selectedTab, setSelectedTab] = useState<'now_showing' | 'coming_soon' | 'in_cinema'>('now_showing');
   const [selectedMovie, setSelectedMovie] = useState<MovieWithScreenings | null>(null);
@@ -209,74 +212,89 @@ export default function ManageMovies() {
   };
 
   const renderMovieCard = (movie: Movie | DatabaseMovie, isInDatabase: boolean = false) => {
-    const posterUrl = isInDatabase 
+    const posterUrl = (movie as DatabaseMovie).posterPath  
       ? (movie as DatabaseMovie).posterPath 
       : (movie as Movie).poster;
 
     return (
-      <Grid item xs={12} sm={6} md={4} lg={3} key={isInDatabase ? (movie as DatabaseMovie)._id : movie.id}>
-        <Card>
-          <CardMedia
-            component="img"
-            height="300"
-            image={posterUrl}
-            alt={movie.title}
-          />
-          <CardContent>
-            <Typography variant="h6" noWrap>
-              {movie.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>
-              Release: {format(new Date(movie.releaseDate), 'dd MMM yyyy')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Rating: {movie.rating.toFixed(1)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Duration: {movie.duration} Muniets
-            </Typography>
-            {isInDatabase && (
-              <Box mt={1}>
-                <Chip 
-                  label={movie.type === 'now_showing' ? 'Now Showing' : 'Coming Soon'} 
-                  color={movie.type === 'now_showing' ? 'success' : 'warning'}
-                  size="small"
-                />
-              </Box>
-            )}
-          </CardContent>
-          <CardActions>
-            {isInDatabase ? (
+      <Card 
+        sx={{ 
+          width: '100%',
+          height: '500px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <CardMedia
+          component="img"
+          height="300"
+          image={posterUrl}
+          alt={movie.title}
+          sx={{ objectFit: 'cover' }}
+        />
+        <CardContent sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap>
+            {movie.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            Release: {format(new Date(movie.releaseDate), 'dd MMM yyyy')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Rating: {movie.rating.toFixed(1)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Duration: {movie.duration} Muniets
+          </Typography>
+          {isInDatabase && (
+            <Box mt={1}>
+              <Chip 
+                label={movie.type === 'now_showing' ? 'Now Showing' : 'Coming Soon'} 
+                color={movie.type === 'now_showing' ? 'success' : 'warning'}
+                size="small"
+              />
+            </Box>
+          )}
+        </CardContent>
+        <CardActions sx={{ padding: 2, pt: 0 }}>
+          {isInDatabase ? (
+            <Button 
+              size="small" 
+              variant="outlined"
+              color="error"
+              onClick={() => handleDeleteMovie(movie.id)}
+              fullWidth
+            >
+              Remove from Cinema
+            </Button>
+          ) : (
+            !isMovieInDatabase(movie.id) && (
               <Button 
                 size="small" 
-                variant="outlined"
-                color="error"
-                onClick={() => handleDeleteMovie(movie.id)}
+                variant="contained"
+                onClick={() => handleMovieSelect(movie as Movie)}
+                fullWidth
               >
-                Remove from Cinema
+                Add to Cinema
               </Button>
-            ) : (
-              !isMovieInDatabase(movie.id) && (
-                <Button 
-                  size="small" 
-                  variant="contained"
-                  onClick={() => handleMovieSelect(movie as Movie)}
-                >
-                  Add to Cinema
-                </Button>
-              )
-            )}
-          </CardActions>
-        </Card>
-      </Grid>
+            )
+          )}
+        </CardActions>
+      </Card>
     );
   };
 
-  const currentMovies = selectedTab === 'in_cinema' 
-    ? [] 
-    : selectedTab === 'now_showing' 
-      ? allMovies.nowShowing 
-      : allMovies.comingSoon;
+  const filteredMovies = {
+    nowShowing: allMovies.nowShowing.filter(movie =>
+      movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    comingSoon: allMovies.comingSoon.filter(movie =>
+      movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  };
+
+  const filteredDatabaseMovies = databaseMovies.filter(movie =>
+    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -286,24 +304,65 @@ export default function ManageMovies() {
         </Alert>
       )}
 
-      <Typography variant="h4" gutterBottom>
-        Manage Movies
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search movies..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          size='small'
+          sx={{ 
+            maxWidth: 500,
+            mb: 2,
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: 'gray',
+              '&:hover': {
+                '& > fieldset': {
+                  borderColor: 'primary.main',
+                },
+              },
+            },
+          }}
+        />
 
-      <Tabs
-        value={selectedTab}
-        onChange={(_, newValue) => setSelectedTab(newValue)}
-        sx={{ mb: 3 }}
-      >
-        <Tab label="Now Showing" value="now_showing" />
-        <Tab label="Coming Soon" value="coming_soon" />
-        <Tab label="In Cinema" value="in_cinema" />
-      </Tabs>
+        <Tabs
+          value={selectedTab}
+          onChange={(_, newValue) => setSelectedTab(newValue)}
+          sx={{ mb: 2 }}
+        >
+          <Tab label="Now Showing" value="now_showing" />
+          <Tab label="Coming Soon" value="coming_soon" />
+          <Tab label="In Cinema" value="in_cinema" />
+        </Tabs>
+      </Box>
 
-      <Grid container spacing={3}>
-        {selectedTab === 'in_cinema' 
-          ? databaseMovies.map(movie => renderMovieCard(movie, true))
-          : currentMovies.map(movie => renderMovieCard(movie))}
+      <Grid container spacing={2} sx={{ px: 0 }}>
+        {selectedTab === 'now_showing' && 
+          filteredMovies.nowShowing.map((movie) => (
+            <Grid item xs={12} sm={1} md={1} lg={1} key={movie.id} sx={{ p: 1 }}>
+              {renderMovieCard(movie, isMovieInDatabase(movie.id))}
+            </Grid>
+          ))}
+        {selectedTab === 'coming_soon' && 
+          filteredMovies.comingSoon.map((movie) => (
+            <Grid item xs={12} sm={1} md={1} lg={1} key={movie.id} sx={{ p: 1 }}>
+              {renderMovieCard(movie, isMovieInDatabase(movie.id))}
+            </Grid>
+          ))}
+        {selectedTab === 'in_cinema' && 
+          filteredDatabaseMovies.map((movie) => (
+            <Grid item xs={12} sm={1} md={1} lg={1} key={movie.id} sx={{ p: 1 }}>
+              {renderMovieCard(movie, true)}
+            </Grid>
+          ))}
       </Grid>
 
       <Dialog 
