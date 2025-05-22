@@ -51,13 +51,20 @@
 					"name": "Create Movies",
 					"request": {
 						"auth": {
-							"type": "noauth"
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "",
+							"raw": "{\n  \"tmdbId\": \"123456\",\n  \"title\": \"Movie Title\",\n  \"overview\": \"Movie description\",\n  \"posterPath\": \"/path/to/poster.jpg\",\n  \"releaseDate\": \"2024-03-20\",\n  \"rating\": 8.5,\n  \"duration\": 120,\n  \"type\": \"now_showing\",\n  \"screeningDates\": [\n    {\n      \"startDate\": \"2024-03-20T00:00:00Z\",\n      \"endDate\": \"2024-03-27T23:59:59Z\"\n    }\n  ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -157,19 +164,9 @@
 			"item": [
 				{
 					"name": "Get screenings",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
 						"method": "GET",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
 						"url": {
 							"raw": "{{BASE_URL}}/screens",
 							"host": [
@@ -183,28 +180,24 @@
 					"response": []
 				},
 				{
-					"name": "Get screenings By id",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
+					"name": "Get screening By Id",
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
 						"method": "GET",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
 						"url": {
-							"raw": "{{BASE_URL}}/screens/682e12942057aec3b6ac874c",
+							"raw": "{{BASE_URL}}/screens/:id",
 							"host": [
 								"{{BASE_URL}}"
 							],
 							"path": [
 								"screens",
-								"682e12942057aec3b6ac874c"
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
 							]
 						}
 					},
@@ -470,19 +463,69 @@
 			"name": "Showtimes",
 			"item": [
 				{
-					"name": "Showtimes",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
+					"name": "Get All Showtimes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/showtimes",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"showtimes"
+							]
+						}
 					},
+					"response": []
+				},
+				{
+					"name": "Get Showtime By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/showtimes/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"showtimes",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Showtime",
 					"request": {
 						"auth": {
-							"type": "noauth"
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
 						},
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": ""
+							"raw": "{\n  \"movieId\": \"your-movie-id\",\n  \"screenId\": \"your-screen-id\",\n  \"startTime\": \"2024-03-20T18:00:00Z\",\n  \"endTime\": \"2024-03-20T20:00:00Z\",\n  \"price\": 15.00\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{BASE_URL}}/showtimes",
@@ -497,60 +540,102 @@
 					"response": []
 				},
 				{
-					"name": "Showtimes By id",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{BASE_URL}}/showtimes/682e237978594458763a422c",
-							"host": [
-								"{{BASE_URL}}"
-							],
-							"path": [
-								"showtimes",
-								"682e237978594458763a422c"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Showtimes Delete by id",
+					"name": "Update Showtime",
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmRjNjAyOTNkNjMxY2ZjNjYzZjJmOCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc0NzgzMzIwNCwiZXhwIjoxNzQ3OTE5NjA0fQ.JWpYb1YdKARULyy8b-UlTVEg5q7rDd-GkLmRA5TUW28",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"startTime\": \"2024-03-20T19:00:00Z\",\n  \"price\": 12.00\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/showtimes/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"showtimes",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Showtime",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
 									"type": "string"
 								}
 							]
 						},
 						"method": "DELETE",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
 						"url": {
-							"raw": "{{BASE_URL}}/showtimes/682e1eb778594458763a29a4",
+							"raw": "{{BASE_URL}}/showtimes/:id",
 							"host": [
 								"{{BASE_URL}}"
 							],
 							"path": [
 								"showtimes",
-								"682e1eb778594458763a29a4"
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Showtime Seats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/showtimes/:id/seats",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"showtimes",
+								":id",
+								"seats"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
 							]
 						}
 					},
@@ -582,6 +667,40 @@
 							],
 							"path": [
 								"bookings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Booking",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"paymentMethod\": \"credit_card\",\n  \"paymentDetails\": {\n    \"cardNumber\": \"4111111111111111\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2025\",\n    \"cvv\": \"123\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/bookings/:bookingId/complete",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId",
+								"complete"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": ""
+								}
 							]
 						}
 					},
@@ -802,6 +921,28 @@
 							"path": [
 								"auth",
 								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "TMDB",
+			"item": [
+				{
+					"name": "Get TMDB Movies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/tmdb",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tmdb"
 							]
 						}
 					},
