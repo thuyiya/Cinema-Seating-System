@@ -16,7 +16,7 @@ import paymentRoutes from './routes/paymentRoutes';
 import ticketRoutes from './routes/ticketRoutes';
 import { startBookingCleanupJob } from './jobs/bookingCleanup';
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Update MongoDB URI to explicitly include SSL settings
@@ -25,7 +25,34 @@ const mongoUri = MONGODB_URI.includes('mongodb+srv')
   ? MONGODB_URI + '&ssl=true&tlsInsecure=true'
   : MONGODB_URI;
 
-const startServer = async () => {
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+app.use(passport.initialize());
+
+// API Routes
+const apiRouter = express.Router();
+app.use('/api', apiRouter);
+
+apiRouter.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Mount routes
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/tmdb', tmdbRoutes);
+apiRouter.use('/movies', movieRoutes);
+apiRouter.use('/screens', screenRoutes);
+apiRouter.use('/showtimes', showtimeRoutes);
+apiRouter.use('/bookings', bookingRoutes);
+apiRouter.use('/payments', paymentRoutes);
+apiRouter.use('/tickets', ticketRoutes);
+
+export const startServer = async () => {
   try {
     // Connect to MongoDB
     await mongoose.connect(mongoUri);
@@ -34,33 +61,6 @@ const startServer = async () => {
     // Start the booking cleanup job
     startBookingCleanupJob();
     console.log('🧹 Started booking cleanup job');
-
-    // Middleware
-    app.use(cors());
-    app.use(express.json());
-    app.use(morgan('dev'));
-    app.use(passport.initialize());
-
-    // API Routes
-    const apiRouter = express.Router();
-    app.use('/api', apiRouter);
-
-    apiRouter.get('/health', (req, res) => {
-      res.json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    // Mount routes
-    apiRouter.use('/auth', authRoutes);
-    apiRouter.use('/tmdb', tmdbRoutes);
-    apiRouter.use('/movies', movieRoutes);
-    apiRouter.use('/screens', screenRoutes);
-    apiRouter.use('/showtimes', showtimeRoutes);
-    apiRouter.use('/bookings', bookingRoutes);
-    apiRouter.use('/payments', paymentRoutes);
-    apiRouter.use('/tickets', ticketRoutes);
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
@@ -71,4 +71,7 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start the server if this file is run directly
+if (require.main === module) {
+  startServer();
+}
