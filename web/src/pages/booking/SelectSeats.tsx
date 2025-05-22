@@ -150,7 +150,23 @@ export default function SelectSeats() {
         <Typography variant="h6" gutterBottom align="center">
           Screen
         </Typography>
-        <Divider sx={{ mb: 4 }} />
+        <Divider 
+          sx={{ 
+            mb: 4,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, #ffffff, transparent)',
+            boxShadow: '0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px #ffffff',
+            animation: 'glow 1.5s ease-in-out infinite alternate',
+            '@keyframes glow': {
+              from: {
+                boxShadow: '0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 15px #ffffff'
+              },
+              to: {
+                boxShadow: '0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px #ffffff'
+              }
+            }
+          }} 
+        />
 
         <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <SeatLayout
