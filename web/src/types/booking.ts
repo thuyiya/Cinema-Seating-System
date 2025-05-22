@@ -58,6 +58,7 @@ export interface BookingRequest {
 }
 
 export interface BookingResponse {
+  bookingId?: string;
   _id: string;
   userId: {
     _id: string;
