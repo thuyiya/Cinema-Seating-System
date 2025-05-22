@@ -117,7 +117,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   onSeatClick,
   isAdminView = false
 }) => {
-  const getTransform = (sectionIndex: number, seatIndex: number, totalSeats: number) => {
+  const getTransform = (seatIndex: number, totalSeats: number) => {
     if (layout.type === 'straight') return '';
     
     if (layout.type === 'curved') {
@@ -131,20 +131,6 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
     }
     
     return '';
-  };
-
-  const getSeatTooltip = (seat: Seat) => {
-    const baseInfo = `Row ${seat.row}, Seat ${seat.number}
-Type: ${seat.type}`;
-
-    if (isAdminView) {
-      return `${baseInfo}
-Status: ${seat.status || 'available'}
-Position: ${seat.position}
-${seat.preferredView ? 'Preferred View' : ''}`;
-    }
-
-    return baseInfo;
   };
 
   const getSeatClass = (seat: Seat) => {
@@ -196,51 +182,69 @@ ${seat.preferredView ? 'Preferred View' : ''}`;
               transform: layout.type === 'c-shaped' ? 'perspective(1000px)' : 'none',
             }}
           >
-            {Array.from(new Set(section.seats.map(s => s.row))).sort().map((row, rowIndex) => {
-              const rowSeats = section.seats.filter(s => s.row === row).sort((a, b) => a.number - b.number);
-              const rowLetter = getRowLabel(row);
-              
-              return (
-                <Box
-                  key={row}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    mb: 1,
-                    transform: layout.type !== 'straight' ? `translateZ(${rowIndex * 5}px)` : 'none',
-                  }}
-                >
-                  <Typography sx={{ mr: 2, minWidth: 30, fontWeight: 'bold' }}>
-                    {rowLetter}
-                  </Typography>
-                  <Box sx={{ display: 'flex' }}>
-                    {rowSeats.map((seat, seatIndex) => {
-                      const isAisle = layout?.aislePositions?.includes(seat.number);
-                      const seatLabel = `${rowLetter}${seat.number}`;
-                      const isDisabled = !isAdminView && (seat.status === 'booked' || seat.isBooked);
+            {Array.from(new Set(section.seats.map(s => s.row)))
+              .sort((a, b) => {
+                // Convert row labels to numbers for comparison
+                const rowA = parseInt(a);
+                const rowB = parseInt(b);
+                
+                // If both are numbers, compare numerically
+                if (!isNaN(rowA) && !isNaN(rowB)) {
+                  return rowA - rowB;
+                }
+                
+                // Get the row letters
+                const letterA = getRowLabel(a);
+                const letterB = getRowLabel(b);
+                
+                // Compare alphabetically
+                return letterA.localeCompare(letterB);
+              })
+              .map((row, rowIndex) => {
+                const rowSeats = section.seats.filter(s => s.row === row).sort((a, b) => a.number - b.number);
+                const rowLetter = getRowLabel(row);
+                
+                return (
+                  <Box
+                    key={row}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 1,
+                      transform: layout.type !== 'straight' ? `translateZ(${rowIndex * 5}px)` : 'none',
+                    }}
+                  >
+                    <Typography sx={{ mr: 2, minWidth: 30, fontWeight: 'bold' }}>
+                      {rowLetter}
+                    </Typography>
+                    <Box sx={{ display: 'flex' }}>
+                      {rowSeats.map((seat, seatIndex) => {
+                        const isAisle = layout?.aislePositions?.includes(seat.number);
+                        const seatLabel = `${rowLetter}${seat.number}`;
+                        const isDisabled = !isAdminView && (seat.status === 'booked' || seat.isBooked);
 
-                      return (
-                        <React.Fragment key={seat.id}>
-                          {isAisle && <Box sx={{ width: 20 }} />}
-                          <Tooltip title={`${seatLabel} - ${seat.type}${seat.status ? ` (${seat.status})` : ''}`}>
-                            <StyledSeat
-                              className={`${getSeatClass(seat)}${isAdminView ? ' admin' : ''}`}
-                              onClick={() => !isDisabled && onSeatClick(seat.id, seat)}
-                              sx={{
-                                transform: getTransform(sectionIndex, seatIndex, rowSeats.length),
-                                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                              }}
-                            >
-                              {seatLabel}
-                            </StyledSeat>
-                          </Tooltip>
-                        </React.Fragment>
-                      );
-                    })}
+                        return (
+                          <React.Fragment key={seat.id}>
+                            {isAisle && <Box sx={{ width: 20 }} />}
+                            <Tooltip title={`${seatLabel} - ${seat.type}${seat.status ? ` (${seat.status})` : ''}`}>
+                              <StyledSeat
+                                className={`${getSeatClass(seat)}${isAdminView ? ' admin' : ''}`}
+                                onClick={() => !isDisabled && onSeatClick(seat.id, seat)}
+                                sx={{
+                                  transform: getTransform(seatIndex, rowSeats.length),
+                                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                {seatLabel}
+                              </StyledSeat>
+                            </Tooltip>
+                          </React.Fragment>
+                        );
+                      })}
+                    </Box>
                   </Box>
-                </Box>
-              );
-            })}
+                );
+              })}
           </Box>
         </Box>
       ))}

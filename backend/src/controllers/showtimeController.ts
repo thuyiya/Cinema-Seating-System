@@ -202,6 +202,7 @@ export const getShowtimeSeats = async (req: Request, res: Response) => {
         row: section.rowLabels[seat.row - section.startRow] || seat.row.toString(),
         number: seat.number,
         type: seat.type.toUpperCase(),
+        status: seat.status,
         isBooked: seat.status !== 'available' || 
                  (showtime.bookedSeats && showtime.bookedSeats.some(bs => bs.seatId.toString() === (seat as ISeatWithId)._id.toString())),
         position: seat.position,

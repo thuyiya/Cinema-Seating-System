@@ -177,12 +177,28 @@ export default function SelectSeats() {
               </Button>
             </Grid>
             <Grid item>
-              <Button variant="outlined" disabled sx={{ backgroundColor: 'secondary.light' }}>
+              <Button 
+                variant="outlined" 
+                disabled 
+                sx={{ 
+                  backgroundColor: 'secondary.light',
+                  '& .MuiButton-label': { color: '#000000' },
+                  color: '#000000'
+                }}
+              >
                 VIP (${showtime?.price?.VIP || 0})
               </Button>
             </Grid>
             <Grid item>
-              <Button variant="outlined" disabled sx={{ backgroundColor: 'info.light' }}>
+              <Button 
+                variant="outlined" 
+                disabled 
+                sx={{ 
+                  backgroundColor: 'info.light',
+                  '& .MuiButton-label': { color: '#000000' },
+                  color: '#000000'
+                }}
+              >
                 Accessible (${showtime?.price?.ACCESSIBLE || 0})
               </Button>
             </Grid>
