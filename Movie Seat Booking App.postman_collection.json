@@ -209,6 +209,119 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Create Screen",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Screen 1\",\n  \"capacity\": 100,\n  \"rows\": 10,\n  \"seatsPerRow\": 10\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/screens",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"screens"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Screen",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Screen 1 Updated\",\n  \"capacity\": 120\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/screens/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"screens",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Screen",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/screens/:id",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"screens",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -449,28 +562,74 @@
 			"name": "Booking",
 			"item": [
 				{
-					"name": "Get bookings",
+					"name": "Create Booking",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MmRjNjAyOTNkNjMxY2ZjNjYzZjJmOCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc0NzgzMzIwNCwiZXhwIjoxNzQ3OTE5NjA0fQ.JWpYb1YdKARULyy8b-UlTVEg5q7rDd-GkLmRA5TUW28",
-									"type": "string"
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"showtimeId\": \"your-showtime-id\",\n  \"seats\": [\"A1\", \"A2\"],\n  \"customerDetails\": {\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"1234567890\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
 								}
-							]
+							}
 						},
+						"url": {
+							"raw": "{{BASE_URL}}/bookings",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking Details",
+					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{BASE_URL}}/bookings/682ec224a8d9de6236270ca6",
+							"raw": "{{BASE_URL}}/bookings/:bookingId",
 							"host": [
 								"{{BASE_URL}}"
 							],
 							"path": [
 								"bookings",
-								"682ec224a8d9de6236270ca6"
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/bookings/:bookingId",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"bookings",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": ""
+								}
 							]
 						}
 					},
@@ -531,6 +690,124 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Payment",
+			"item": [
+				{
+					"name": "Process Payment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"bookingId\": \"your-booking-id\",\n  \"paymentMethod\": \"credit_card\",\n  \"amount\": 50.00\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL}}/payments/process",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"payments",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/payments/:paymentId",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"payments",
+								":paymentId"
+							],
+							"variable": [
+								{
+									"key": "paymentId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ticket",
+			"item": [
+				{
+					"name": "Get Ticket Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/tickets/:bookingId",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"tickets",
+								":bookingId"
+							],
+							"variable": [
+								{
+									"key": "bookingId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{ADMIN_TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL}}/auth/users",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"auth",
+								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
@@ -559,6 +836,11 @@
 		{
 			"key": "BASE_URL",
 			"value": "http://localhost:3001/api",
+			"type": "string"
+		},
+		{
+			"key": "ADMIN_TOKEN",
+			"value": "your-admin-token-here",
 			"type": "string"
 		}
 	]
