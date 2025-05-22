@@ -2,6 +2,71 @@
 
 A modern cinema booking system with real-time movie data from TMDB API and MongoDB database.
 
+## System Demo
+
+### 1. Movie Listing and Homepage
+![Movie Listing](./images/1.png)
+*Homepage showcasing the latest movies with a dynamic grid layout. Features include:*
+- Real-time movie data integration with TMDB API
+- Responsive grid layout for optimal viewing
+- Quick access to movie details and booking options
+
+### 2. Showtime Selection Interface
+![Showtime Selection](./images/2.png)
+*Intuitive showtime selection screen allowing users to:*
+- View available showtimes for selected movies
+- Select preferred screening dates
+- See screen information and seat availability
+
+### 3. Interactive Seat Selection
+![Seat Selection](./images/3.png)
+*Advanced seat selection interface featuring:*
+- Real-time seat availability updates
+- Interactive seat map with color-coded status
+- Different seat types (Regular, VIP, Accessible)
+
+### 4. Admin Dashboard
+![Admin Dashboard](./images/4.png)
+*Comprehensive admin control panel providing:*
+- Overview of current bookings and revenue
+- Movie and showtime management
+- User activity monitoring
+
+### 5. Screen Configuration
+![Screen Management](./images/5.png)
+*Screen management interface enabling:*
+- Custom screen layout configuration
+- Seat type and pricing management
+- Maintenance status updates
+
+### 6. Booking Management
+![Booking Management](./images/6.png)
+*Detailed booking management system with:*
+- Real-time booking status updates
+- Transaction history
+- Customer information tracking
+
+### 7. User Profile Management
+![User Profile](./images/7.png)
+*User profile interface featuring:*
+- Personal information management
+- Booking history view
+- Preference settings
+
+### 8. Digital Ticket Display
+![Ticket View](./images/8.png)
+*Digital ticket interface showing:*
+- QR code for easy check-in
+- Booking details and seat information
+- Movie and showtime information
+
+### 9. Payment Processing
+![Payment Interface](./images/9.png)
+*Secure payment interface with:*
+- Multiple payment method options
+- Secure transaction processing
+- Booking summary
+
 ## Prerequisites
 
 - Node.js (v18 or higher)
