@@ -28,30 +28,40 @@ export interface Seat {
   row: string;
   number: number;
   type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
-  isAvailable: boolean;
+  isBooked: boolean;
+  status?: 'available' | 'booked' | 'broken' | 'maintenance';
+  position: 'aisle' | 'middle' | 'edge';
+  preferredView: boolean;
+}
+
+export interface Section {
+  name: string;
+  seats: Seat[];
 }
 
 export interface SeatingMap {
-  rows: {
-    id: string;
-    seats: Seat[];
-  }[];
+  sections: Section[];
+  layout: {
+    type: 'straight' | 'curved' | 'c-shaped';
+    hasBalcony: boolean;
+    aislePositions: number[];
+  };
 }
 
 export interface BookingRequest {
   _id?: string;
   showtimeId: string;
-  seats: {
+  seats: Array<{
     seatId: string;
     row: string;
     number: number;
-    type: 'REGULAR' | 'VIP' | 'ACCESSIBLE';
+    type: string;
     price: number;
-  }[];
+  }>;
   guestInfo?: {
     name: string;
     email: string;
-    mobile: string;
+    phone: string;
   };
   groupSize: number;
   totalAmount: number;

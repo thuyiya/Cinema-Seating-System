@@ -175,7 +175,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
 
   return (
     <Box sx={{ mt: 2, overflow: 'auto' }}>
-      {sections.map((section, sectionIndex) => (
+      {(sections || []).map((section, sectionIndex) => (
         <Box key={section.name} sx={{ mb: 4 }}>
           <Typography variant="h6" gutterBottom>
             {section.name}

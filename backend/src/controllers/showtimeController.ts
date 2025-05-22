@@ -215,7 +215,13 @@ export const getShowtimeSeats = async (req: Request, res: Response) => {
       };
     });
 
-    res.json(seatingMap);
+    // Include the screen layout in the response
+    const response = {
+      sections: seatingMap,
+      layout: screen.layout
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching showtime seats:', error);
     res.status(500).json({ message: 'Error fetching seats' });

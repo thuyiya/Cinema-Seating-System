@@ -1,4 +1,4 @@
-import type { BookingRequest, BookingResponse, Seat, SeatingMap } from '../types/booking';
+import type { BookingRequest, BookingResponse, Seat, SeatingMap, Section } from '../types/booking';
 import api from './api';
 
 interface TicketResponse {
@@ -36,6 +36,15 @@ interface TicketResponse {
   };
 }
 
+interface ShowtimeSeatsResponse {
+  sections: Section[];
+  layout: {
+    type: 'straight' | 'curved' | 'c-shaped';
+    hasBalcony: boolean;
+    aislePositions: number[];
+  };
+}
+
 export class BookingService {
   static async findSeatsForGroup(groupSize: number, screeningId: string): Promise<Seat[]> {
     const response = await api.get<Seat[]>(`/screens/${screeningId}/seats/group`, {
@@ -53,18 +62,32 @@ export class BookingService {
     // Create a temporary map with selected seats marked as occupied
     const simulatedMap = this.simulateOccupancy(seatingMap, selectedSeats);
     
-    // Check each row for isolated seats
-    for (const row of simulatedMap.rows) {
-      const seatStatuses = row.seats.map(seat => seat.isAvailable);
-      
-      // Look for available seats surrounded by occupied seats or walls
-      for (let i = 0; i < seatStatuses.length; i++) {
-        if (
-          seatStatuses[i] && // Seat is available
-          (i === 0 || !seatStatuses[i-1]) && // Left is wall or occupied
-          (i === seatStatuses.length-1 || !seatStatuses[i+1]) // Right is wall or occupied
-        ) {
-          return true;
+    // Check each section's seats for isolated seats
+    for (const section of simulatedMap.sections) {
+      // Group seats by row
+      const rowGroups = section.seats.reduce<Record<string, Seat[]>>((acc, seat) => {
+        if (!acc[seat.row]) {
+          acc[seat.row] = [];
+        }
+        acc[seat.row].push(seat);
+        return acc;
+      }, {});
+
+      // Check each row for isolated seats
+      for (const rowSeats of Object.values(rowGroups)) {
+        // Sort seats by number for proper adjacency check
+        const sortedSeats = rowSeats.sort((a, b) => a.number - b.number);
+        const seatStatuses = sortedSeats.map(seat => !seat.isBooked);
+        
+        // Look for available seats surrounded by occupied seats or walls
+        for (let i = 0; i < seatStatuses.length; i++) {
+          if (
+            seatStatuses[i] && // Seat is available
+            (i === 0 || !seatStatuses[i-1]) && // Left is wall or occupied
+            (i === seatStatuses.length-1 || !seatStatuses[i+1]) // Right is wall or occupied
+          ) {
+            return true;
+          }
         }
       }
     }
@@ -76,10 +99,10 @@ export class BookingService {
     const simulatedMap: SeatingMap = JSON.parse(JSON.stringify(seatingMap));
     
     for (const selectedSeat of selectedSeats) {
-      for (const row of simulatedMap.rows) {
-        const seat = row.seats.find(s => s.id === selectedSeat.id);
+      for (const section of simulatedMap.sections) {
+        const seat = section.seats.find((s: Seat) => s.id === selectedSeat.id);
         if (seat) {
-          seat.isAvailable = false;
+          seat.isBooked = true;
         }
       }
     }
@@ -93,12 +116,12 @@ export class BookingService {
   }
 
   static async getShowtimeSeats(showtimeId: string, screenId: string) {
-    const response = await api.get(`/api/showtimes/${showtimeId}/${screenId}/seats`);
-    return response.data;
+    const response = await api.get<ShowtimeSeatsResponse>(`/api/showtimes/${showtimeId}/${screenId}/seats`);
+    return response.data.sections;
   }
 
-  static async createBooking(bookingRequest: BookingRequest): Promise<BookingResponse> {
-    const response = await api.post<BookingResponse>('/api/bookings', bookingRequest);
+  static async createBooking(bookingData: BookingRequest): Promise<BookingResponse> {
+    const response = await api.post<BookingResponse>('/api/bookings', bookingData);
     return response.data;
   }
 
