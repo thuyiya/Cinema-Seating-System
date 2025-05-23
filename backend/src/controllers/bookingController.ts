@@ -25,8 +25,8 @@ export const createBooking = async (req: Request, res: Response) => {
 
       if (guestUser) {
         // Update the phone number if it has changed
-        if (guestUser.phone !== guestInfo.mobile) {
-          guestUser.phone = guestInfo.mobile;
+        if (guestUser.phone !== guestInfo.phone) {
+          guestUser.phone = guestInfo.phone;
           await guestUser.save({ session });
         }
       } else {
@@ -34,7 +34,7 @@ export const createBooking = async (req: Request, res: Response) => {
         guestUser = new User({
           name: guestInfo.name,
           email: guestInfo.email,
-          phone: guestInfo.mobile,
+          phone: guestInfo.phone,
           password: await bcrypt.hash(GUEST_PASSWORD, 10),
           role: 'guest'
         });
